@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import CreateSession from "./pages/CreateSession";
 import JoinSession from "./pages/JoinSession";
 import Legal from "./pages/Legal";
+import Mediation from "./pages/Mediation";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -21,6 +22,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/create-session" element={<CreateSession />} />
           <Route path="/join-session" element={<JoinSession />} />
+          <Route path="/mediation/:sessionId" element={<Mediation />} />
           <Route path="/legal" element={<Legal />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
