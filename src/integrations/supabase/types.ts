@@ -14,7 +14,151 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          message_type: Database["public"]["Enums"]["message_type"] | null
+          sender_id: string | null
+          sender_role: Database["public"]["Enums"]["party_role"] | null
+          session_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          message_type?: Database["public"]["Enums"]["message_type"] | null
+          sender_id?: string | null
+          sender_role?: Database["public"]["Enums"]["party_role"] | null
+          session_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          message_type?: Database["public"]["Enums"]["message_type"] | null
+          sender_id?: string | null
+          sender_role?: Database["public"]["Enums"]["party_role"] | null
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          full_name: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      sessions: {
+        Row: {
+          created_at: string
+          created_by: string
+          current_party: Database["public"]["Enums"]["party_role"] | null
+          dispute_description: string | null
+          id: string
+          is_settled: boolean | null
+          party_a_id: string | null
+          party_b_id: string | null
+          session_code: string
+          settlement_amount: number | null
+          settlement_terms: string | null
+          status: Database["public"]["Enums"]["session_status"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          current_party?: Database["public"]["Enums"]["party_role"] | null
+          dispute_description?: string | null
+          id?: string
+          is_settled?: boolean | null
+          party_a_id?: string | null
+          party_b_id?: string | null
+          session_code: string
+          settlement_amount?: number | null
+          settlement_terms?: string | null
+          status?: Database["public"]["Enums"]["session_status"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          current_party?: Database["public"]["Enums"]["party_role"] | null
+          dispute_description?: string | null
+          id?: string
+          is_settled?: boolean | null
+          party_a_id?: string | null
+          party_b_id?: string | null
+          session_code?: string
+          settlement_amount?: number | null
+          settlement_terms?: string | null
+          status?: Database["public"]["Enums"]["session_status"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sessions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sessions_party_a_id_fkey"
+            columns: ["party_a_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sessions_party_b_id_fkey"
+            columns: ["party_b_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +167,14 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      message_type: "text" | "system" | "ai_response" | "settlement_proposal"
+      party_role: "party_a" | "party_b" | "mediator"
+      session_status:
+        | "waiting"
+        | "active"
+        | "paused"
+        | "completed"
+        | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +301,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      message_type: ["text", "system", "ai_response", "settlement_proposal"],
+      party_role: ["party_a", "party_b", "mediator"],
+      session_status: ["waiting", "active", "paused", "completed", "cancelled"],
+    },
   },
 } as const
