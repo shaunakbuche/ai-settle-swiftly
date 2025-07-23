@@ -1,11 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Check, Clock, Shield, Users, Zap, Bot } from "lucide-react";
+import { Check, Clock, Shield, Users, Zap, Bot, LogOut } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import heroImage from "@/assets/hero-mediation.jpg";
 
 const Index = () => {
+  const { user, profile, signOut } = useAuth();
   return (
     <div className="min-h-screen bg-gradient-hero">
       {/* Header */}
@@ -29,9 +31,23 @@ const Index = () => {
               <Link to="/legal" className="text-muted-foreground hover:text-foreground transition-colors">
                 Legal
               </Link>
-              <Button variant="outline" size="sm">
-                Sign In
-              </Button>
+              {user ? (
+                <div className="flex items-center gap-4">
+                  <span className="text-sm text-muted-foreground">
+                    Welcome, {profile?.full_name || user.email}
+                  </span>
+                  <Button variant="outline" size="sm" onClick={signOut}>
+                    <LogOut className="h-4 w-4 mr-1" />
+                    Sign Out
+                  </Button>
+                </div>
+              ) : (
+                <Link to="/auth">
+                  <Button variant="outline" size="sm">
+                    Sign In
+                  </Button>
+                </Link>
+              )}
             </nav>
           </div>
         </div>
@@ -58,16 +74,26 @@ const Index = () => {
               </div>
               
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link to="/create-session">
-                  <Button variant="hero" size="lg" className="w-full sm:w-auto">
-                    Start Mediation Session
-                  </Button>
-                </Link>
-                <Link to="/join-session">
-                  <Button variant="outline" size="lg" className="w-full sm:w-auto">
-                    Join Existing Session
-                  </Button>
-                </Link>
+                {user ? (
+                  <>
+                    <Link to="/create-session">
+                      <Button variant="hero" size="lg" className="w-full sm:w-auto">
+                        Start Mediation Session
+                      </Button>
+                    </Link>
+                    <Link to="/join-session">
+                      <Button variant="outline" size="lg" className="w-full sm:w-auto">
+                        Join Existing Session
+                      </Button>
+                    </Link>
+                  </>
+                ) : (
+                  <Link to="/auth">
+                    <Button variant="hero" size="lg" className="w-full sm:w-auto">
+                      Get Started
+                    </Button>
+                  </Link>
+                )}
               </div>
 
               <div className="flex items-center gap-8 text-sm text-muted-foreground">

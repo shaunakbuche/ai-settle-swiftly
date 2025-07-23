@@ -1,47 +1,62 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Users, ArrowLeft, Search } from "lucide-react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { useSession } from "@/hooks/useSession";
 
 const JoinSession = () => {
   const [searchParams] = useSearchParams();
-  const [sessionId, setSessionId] = useState(searchParams.get("id") || "");
-  const [partyName, setPartyName] = useState("");
-  const [email, setEmail] = useState("");
+  const [sessionCode, setSessionCode] = useState(searchParams.get("session") || "");
+  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const { user, profile } = useAuth();
+  const { joinSession } = useSession();
 
-  const handleJoinSession = () => {
-    if (!sessionId || !partyName) {
+  useEffect(() => {
+    if (!user) {
+      navigate("/auth");
+    }
+  }, [user, navigate]);
+
+  const handleJoinSession = async () => {
+    if (!sessionCode.trim()) {
       toast({
         title: "Missing Information",
-        description: "Please enter both session ID and your name.",
-        variant: "destructive"
+        description: "Please provide the Session Code.",
+        variant: "destructive",
       });
       return;
     }
 
-    if (sessionId.length !== 6) {
+    if (!profile) {
       toast({
-        title: "Invalid Session ID",
-        description: "Session ID should be 6 characters long.",
-        variant: "destructive"
+        title: "Profile Error",
+        description: "Please ensure your profile is set up.",
+        variant: "destructive",
       });
       return;
     }
 
-    // Simulate successful join - in real app, this would validate the session
-    toast({
-      title: "Joining Session...",
-      description: "Connecting you to the mediation session.",
-    });
-
-    // Navigate to mediation room
-    window.location.href = `/mediation/${sessionId.toUpperCase()}?party=2`;
+    setLoading(true);
+    const session = await joinSession(sessionCode.toUpperCase());
+    
+    if (session) {
+      navigate(`/mediation/${session.id}`);
+    }
+    
+    setLoading(false);
   };
+
+  if (!user) {
+    return null; // Will redirect to auth
+  }
 
   return (
     <div className="min-h-screen bg-gradient-hero">
@@ -74,39 +89,25 @@ const JoinSession = () => {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="sessionId">Session ID *</Label>
+                <Label htmlFor="sessionCode">Session Code *</Label>
                 <Input 
-                  id="sessionId"
-                  placeholder="Enter 6-character session ID"
-                  value={sessionId}
-                  onChange={(e) => setSessionId(e.target.value.toUpperCase())}
-                  maxLength={6}
-                  className="text-center font-mono text-lg tracking-wider"
+                  id="sessionCode"
+                  placeholder="Enter session code"
+                  value={sessionCode}
+                  onChange={(e) => setSessionCode(e.target.value.toUpperCase())}
+                  className="font-mono"
+                  required
                 />
-                <p className="text-xs text-muted-foreground">
-                  Session ID is case-insensitive and 6 characters long
+                <p className="text-sm text-muted-foreground">
+                  Session code provided by the session creator
                 </p>
               </div>
-
               <div className="space-y-2">
-                <Label htmlFor="partyName">Your Name / Organization *</Label>
-                <Input 
-                  id="partyName"
-                  placeholder="Enter your name or organization"
-                  value={partyName}
-                  onChange={(e) => setPartyName(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
-                <Input 
-                  id="email"
-                  type="email"
-                  placeholder="your@email.com (optional)"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
+                <Label>Your Information</Label>
+                <div className="p-3 bg-muted rounded-md">
+                  <p className="font-medium">{profile?.full_name}</p>
+                  <p className="text-sm text-muted-foreground">{profile?.email}</p>
+                </div>
               </div>
 
               <div className="bg-muted/50 rounded-lg p-4">
@@ -124,9 +125,9 @@ const JoinSession = () => {
                 variant="hero" 
                 size="lg" 
                 className="w-full"
-                disabled={!sessionId || !partyName}
+                disabled={!sessionCode.trim() || loading}
               >
-                Join Session
+                {loading ? "Joining Session..." : "Join Session"}
               </Button>
 
               <div className="text-center">
