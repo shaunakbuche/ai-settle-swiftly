@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, Users, MessageSquare, Brain, FileText, PenTool } from "lucide-react";
+import { ArrowRight, Users, MessageSquare, Brain, FileText, PenTool, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const HowItWorks = () => {
@@ -40,6 +40,18 @@ const HowItWorks = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+      {/* Navigation Header */}
+      <div className="border-b border-border/10">
+        <div className="container mx-auto px-4 py-4">
+          <Button asChild variant="ghost" className="mb-4">
+            <Link to="/" className="flex items-center gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Back to Home
+            </Link>
+          </Button>
+        </div>
+      </div>
+      
       <div className="container mx-auto px-4 py-16">
         {/* Hero Section */}
         <div className="text-center mb-16">

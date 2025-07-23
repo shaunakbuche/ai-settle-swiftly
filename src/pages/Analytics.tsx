@@ -1,7 +1,9 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { TrendingUp, Users, MessageSquare, CheckCircle, Clock, DollarSign } from "lucide-react";
+import { TrendingUp, Users, MessageSquare, CheckCircle, Clock, DollarSign, ArrowLeft } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Analytics = () => {
   // Mock data - in real app, this would come from your database
@@ -33,6 +35,18 @@ const Analytics = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+      {/* Navigation Header */}
+      <div className="border-b border-border/10">
+        <div className="container mx-auto px-4 py-4">
+          <Button asChild variant="ghost" className="mb-4">
+            <Link to="/" className="flex items-center gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Back to Home
+            </Link>
+          </Button>
+        </div>
+      </div>
+      
       <div className="container mx-auto px-4 py-16">
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
