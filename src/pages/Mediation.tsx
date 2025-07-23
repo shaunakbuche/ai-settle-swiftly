@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import ChatInterface from "@/components/ChatInterface";
 import AIMediatorPanel from "@/components/AIMediatorPanel";
 import PartyViews from "@/components/PartyViews";
+import SettlementActions from "@/components/SettlementActions";
 
 export default function Mediation() {
   const { sessionId } = useParams();
@@ -155,14 +157,22 @@ export default function Mediation() {
             />
           </div>
 
-          {/* AI Mediator Section */}
-          <div>
+          {/* AI Mediator and Settlement Actions */}
+          <div className="space-y-6">
             <AIMediatorPanel
               sessionId={sessionId || ''}
               sessionStatus={session.status}
               aiSummary={getAISummary()}
               messageCount={messages.length}
               messages={messages}
+            />
+
+            <SettlementActions
+              sessionId={sessionId || ''}
+              sessionCode={session.session_code}
+              sessionStatus={session.status}
+              settlementTerms={session.settlement_terms}
+              settlementAmount={session.settlement_amount}
             />
           </div>
         </div>
