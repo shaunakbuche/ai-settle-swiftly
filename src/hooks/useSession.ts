@@ -232,8 +232,8 @@ export const useSession = (sessionId?: string) => {
       });
 
       // Set up real-time subscription for messages
-      const channel = supabase
-        .channel('schema-db-changes')
+      const messagesChannel = supabase
+        .channel('messages-changes')
         .on(
           'postgres_changes',
           {
@@ -244,6 +244,7 @@ export const useSession = (sessionId?: string) => {
           },
           (payload) => {
             const newMessage = payload.new as Message;
+            console.log('New message received:', newMessage);
             setMessages(prev => {
               // Avoid duplicates
               if (prev.some(msg => msg.id === newMessage.id)) {
@@ -255,8 +256,28 @@ export const useSession = (sessionId?: string) => {
         )
         .subscribe();
 
+      // Set up real-time subscription for session updates
+      const sessionChannel = supabase
+        .channel('session-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'sessions',
+            filter: `id=eq.${sessionId}`,
+          },
+          (payload) => {
+            const updatedSession = payload.new as SessionData;
+            console.log('Session updated:', updatedSession);
+            setSession(updatedSession);
+          }
+        )
+        .subscribe();
+
       return () => {
-        supabase.removeChannel(channel);
+        supabase.removeChannel(messagesChannel);
+        supabase.removeChannel(sessionChannel);
       };
     } else {
       setLoading(false);

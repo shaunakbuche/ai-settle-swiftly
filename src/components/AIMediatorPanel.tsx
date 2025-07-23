@@ -1,20 +1,37 @@
 
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Bot, CheckCircle, Clock, AlertCircle } from "lucide-react";
+import { Bot, CheckCircle, Clock, AlertCircle, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
+import { useAIMediator } from "@/hooks/useAIMediator";
+
+interface Message {
+  id: string;
+  sender_role: string;
+  content: string;
+  message_type: string;
+  created_at: string;
+}
 
 interface AIMediatorPanelProps {
+  sessionId: string;
   sessionStatus: string;
   aiSummary: string;
   messageCount: number;
+  messages: Message[];
 }
 
 export default function AIMediatorPanel({ 
+  sessionId,
   sessionStatus, 
   aiSummary, 
-  messageCount 
+  messageCount,
+  messages 
 }: AIMediatorPanelProps) {
+  const [currentAISummary, setCurrentAISummary] = useState(aiSummary);
+  const { requestAIAction, loading } = useAIMediator();
+
   const getProgressSteps = () => {
     const steps = [
       { label: "Parties joined session", completed: true },
@@ -25,6 +42,46 @@ export default function AIMediatorPanel({
     return steps;
   };
 
+  const handleRequestSummary = async () => {
+    try {
+      const response = await requestAIAction(sessionId, 'summary', messages);
+      setCurrentAISummary(response);
+    } catch (error) {
+      console.error('Failed to get AI summary:', error);
+    }
+  };
+
+  const handleSettlementSuggestion = async () => {
+    try {
+      await requestAIAction(sessionId, 'settlement_suggestion', messages);
+    } catch (error) {
+      console.error('Failed to get settlement suggestion:', error);
+    }
+  };
+
+  const handleProgressAnalysis = async () => {
+    try {
+      await requestAIAction(sessionId, 'progress_analysis', messages);
+    } catch (error) {
+      console.error('Failed to get progress analysis:', error);
+    }
+  };
+
+  // Auto-update summary when messages change significantly
+  useEffect(() => {
+    if (messageCount > 0 && messageCount % 5 === 0) {
+      const updateSummary = async () => {
+        try {
+          const response = await requestAIAction(sessionId, 'summary', messages);
+          setCurrentAISummary(response);
+        } catch (error) {
+          console.error('Auto-update summary failed:', error);
+        }
+      };
+      updateSummary();
+    }
+  }, [messageCount]);
+
   return (
     <div className="space-y-6">
       <Card>
@@ -32,11 +89,12 @@ export default function AIMediatorPanel({
           <CardTitle className="flex items-center gap-2">
             <Bot className="w-5 h-5 text-purple-500" />
             AI Mediator
+            {loading && <Loader2 className="w-4 h-4 animate-spin" />}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
-            <p className="text-sm text-purple-800">{aiSummary}</p>
+            <p className="text-sm text-purple-800 whitespace-pre-wrap">{currentAISummary}</p>
           </div>
 
           <div className="space-y-3">
@@ -78,14 +136,35 @@ export default function AIMediatorPanel({
           <CardTitle className="text-sm">Quick Actions</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          <Button variant="outline" size="sm" className="w-full justify-start">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="w-full justify-start"
+            onClick={handleRequestSummary}
+            disabled={loading || messageCount === 0}
+          >
+            <Bot className="w-4 h-4 mr-2" />
             Request AI Summary
           </Button>
-          <Button variant="outline" size="sm" className="w-full justify-start">
-            Suggest Break
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="w-full justify-start"
+            onClick={handleSettlementSuggestion}
+            disabled={loading || messageCount < 3}
+          >
+            <CheckCircle className="w-4 h-4 mr-2" />
+            Get Settlement Suggestion
           </Button>
-          <Button variant="outline" size="sm" className="w-full justify-start">
-            End Session
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="w-full justify-start"
+            onClick={handleProgressAnalysis}
+            disabled={loading || messageCount === 0}
+          >
+            <AlertCircle className="w-4 h-4 mr-2" />
+            Analyze Progress
           </Button>
         </CardContent>
       </Card>

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
@@ -81,10 +80,10 @@ export default function Mediation() {
   };
 
   const getAISummary = () => {
-    if (messages.length === 0) return "Waiting for conversation to begin...";
-    if (messages.length < 3) return "Listening to both parties...";
-    if (messages.length < 10) return "Analyzing conflict points and identifying common ground...";
-    return "Preparing settlement recommendations based on discussion...";
+    if (messages.length === 0) return "Welcome to AccordNow mediation. I'm here to help facilitate a fair resolution. Please share your perspectives to begin.";
+    if (messages.length < 3) return "I'm analyzing the initial perspectives from both parties. Please continue sharing your concerns and desired outcomes.";
+    if (messages.length < 10) return "I'm identifying common ground and areas of agreement. The conversation is progressing well toward potential resolution.";
+    return "Based on the discussion, I'm preparing personalized settlement recommendations. Use the Quick Actions to request specific AI assistance.";
   };
 
   if (loading) {
@@ -159,9 +158,11 @@ export default function Mediation() {
           {/* AI Mediator Section */}
           <div>
             <AIMediatorPanel
+              sessionId={sessionId || ''}
               sessionStatus={session.status}
               aiSummary={getAISummary()}
               messageCount={messages.length}
+              messages={messages}
             />
           </div>
         </div>
