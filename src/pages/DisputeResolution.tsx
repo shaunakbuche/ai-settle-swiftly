@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,8 +11,21 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { FileText, Users, Edit, CreditCard, Download, ArrowRight, ArrowLeft } from "lucide-react";
+import { FileText, Users, Edit, CreditCard, Download, ArrowRight, ArrowLeft, Copy, UserCheck } from "lucide-react";
 import PaymentModal from "@/components/PaymentModal";
+
+interface SessionData {
+  id: string;
+  title: string;
+  dispute_description: string;
+  session_code: string;
+  status: string;
+  party_a_id?: string;
+  party_b_id?: string;
+  created_by: string;
+  settlement_terms?: string;
+  settlement_amount?: number;
+}
 
 interface DisputeData {
   title: string;
@@ -23,18 +36,20 @@ interface DisputeData {
   partyAEdits: string[];
   partyBEdits: string[];
   finalSettlement: string;
-  sessionId?: string;
-  sessionCode?: string;
 }
 
-type Step = 'dispute' | 'party-inputs' | 'settlement-draft' | 'edit-rounds' | 'checkout' | 'complete';
+type Step = 'waiting-for-party' | 'party-inputs' | 'settlement-draft' | 'edit-rounds' | 'checkout' | 'complete';
+type UserRole = 'creator' | 'party_a' | 'party_b' | null;
 
 export default function DisputeResolution() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { sessionId } = useParams();
   const { toast } = useToast();
   
-  const [currentStep, setCurrentStep] = useState<Step>('dispute');
+  const [session, setSession] = useState<SessionData | null>(null);
+  const [userRole, setUserRole] = useState<UserRole>(null);
+  const [currentStep, setCurrentStep] = useState<Step>('waiting-for-party');
   const [disputeData, setDisputeData] = useState<DisputeData>({
     title: '',
     description: '',
@@ -46,38 +61,38 @@ export default function DisputeResolution() {
     finalSettlement: ''
   });
   
-  const [isPartyA, setIsPartyA] = useState(true);
+  const [currentPartyTurn, setCurrentPartyTurn] = useState<'party_a' | 'party_b'>('party_a');
   const [generatingSettlement, setGeneratingSettlement] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
-  const [currentEditRound, setCurrentEditRound] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) {
       navigate('/auth');
-    }
-  }, [user, navigate]);
-
-  const stepProgress = {
-    'dispute': 16,
-    'party-inputs': 33,
-    'settlement-draft': 50,
-    'edit-rounds': 66,
-    'checkout': 83,
-    'complete': 100
-  };
-
-  const handleDisputeSubmit = async () => {
-    if (!disputeData.title || !disputeData.description) {
-      toast({
-        title: "Missing Information",
-        description: "Please fill in all dispute details",
-        variant: "destructive"
-      });
       return;
     }
 
+    if (sessionId) {
+      fetchSession();
+    } else {
+      // If no sessionId, redirect to create session
+      navigate('/create-session');
+    }
+  }, [user, sessionId, navigate]);
+
+  const fetchSession = async () => {
+    if (!sessionId || !user) return;
+
     try {
-      // Create a session for this dispute resolution
+      const { data: sessionData, error: sessionError } = await supabase
+        .from('sessions')
+        .select('*')
+        .eq('id', sessionId)
+        .single();
+
+      if (sessionError) throw sessionError;
+
+      // Get user's profile
       const { data: profile } = await supabase
         .from('profiles')
         .select('id')
@@ -88,28 +103,99 @@ export default function DisputeResolution() {
         throw new Error('User profile not found');
       }
 
-      const { data: session, error } = await supabase
+      // Determine user role
+      let role: UserRole = null;
+      if (sessionData.created_by === profile.id) {
+        role = 'creator';
+      } else if (sessionData.party_a_id === profile.id) {
+        role = 'party_a';
+      } else if (sessionData.party_b_id === profile.id) {
+        role = 'party_b';
+      }
+
+      setSession(sessionData);
+      setUserRole(role);
+      
+      // Set dispute data from session
+      setDisputeData(prev => ({
+        ...prev,
+        title: sessionData.title,
+        description: sessionData.dispute_description || '',
+        finalSettlement: sessionData.settlement_terms || ''
+      }));
+
+      // Determine current step based on session status
+      if (sessionData.status === 'waiting' && !sessionData.party_b_id) {
+        setCurrentStep('waiting-for-party');
+      } else if (sessionData.status === 'active') {
+        // Check if party inputs are complete
+        if (!sessionData.settlement_terms) {
+          setCurrentStep('party-inputs');
+        } else {
+          setCurrentStep('settlement-draft');
+        }
+      } else if (sessionData.status === 'completed') {
+        setCurrentStep('complete');
+      }
+
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
+      });
+      navigate('/');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const stepProgress = {
+    'waiting-for-party': 20,
+    'party-inputs': 40,
+    'settlement-draft': 60,
+    'edit-rounds': 80,
+    'checkout': 90,
+    'complete': 100
+  };
+
+  const copySessionCode = () => {
+    if (session?.session_code) {
+      navigator.clipboard.writeText(session.session_code);
+      toast({
+        title: "Copied!",
+        description: "Session code copied to clipboard"
+      });
+    }
+  };
+
+  const handlePartyInputsSubmit = async () => {
+    if (!disputeData.partyAOutcome || !disputeData.partyBOutcome) {
+      toast({
+        title: "Missing Information",
+        description: "Both parties must enter their preferred outcomes",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      // Save party inputs to session
+      const { error } = await supabase
         .from('sessions')
-        .insert([{
-          title: disputeData.title,
-          dispute_description: disputeData.description,
+        .update({
           status: 'active',
-          session_code: Math.random().toString(36).substring(2, 8).toUpperCase(),
-          created_by: profile.id,
-          party_a_id: profile.id
-        }])
-        .select()
-        .single();
+          // Store party inputs in settlement_terms temporarily
+          settlement_terms: JSON.stringify({
+            partyAOutcome: disputeData.partyAOutcome,
+            partyBOutcome: disputeData.partyBOutcome
+          })
+        })
+        .eq('id', sessionId);
 
       if (error) throw error;
 
-      setDisputeData(prev => ({
-        ...prev,
-        sessionId: session.id,
-        sessionCode: session.session_code
-      }));
-
-      setCurrentStep('party-inputs');
+      setCurrentStep('settlement-draft');
     } catch (error: any) {
       toast({
         title: "Error",
@@ -119,24 +205,12 @@ export default function DisputeResolution() {
     }
   };
 
-  const handlePartyInputsSubmit = () => {
-    if (!disputeData.partyAOutcome || !disputeData.partyBOutcome) {
-      toast({
-        title: "Missing Information",
-        description: "Both parties must enter their preferred outcomes",
-        variant: "destructive"
-      });
-      return;
-    }
-    setCurrentStep('settlement-draft');
-  };
-
   const generateSettlement = async () => {
     setGeneratingSettlement(true);
     try {
       const { data, error } = await supabase.functions.invoke('ai-mediator', {
         body: {
-          sessionId: disputeData.sessionId,
+          sessionId: sessionId,
           prompt: `Generate a fair settlement proposal for this dispute:
           
 Dispute: ${disputeData.description}
@@ -155,6 +229,12 @@ Please provide a balanced settlement that addresses both parties' concerns and s
         generatedSettlement: settlement,
         finalSettlement: settlement
       }));
+
+      // Save generated settlement to database
+      await supabase
+        .from('sessions')
+        .update({ settlement_terms: settlement })
+        .eq('id', sessionId);
 
       toast({
         title: "Settlement Generated",
@@ -175,7 +255,9 @@ Please provide a balanced settlement that addresses both parties' concerns and s
   const handleEdit = (editText: string) => {
     if (!editText.trim()) return;
 
-    const edits = isPartyA ? disputeData.partyAEdits : disputeData.partyBEdits;
+    const isCurrentUserPartyA = userRole === 'party_a' || userRole === 'creator';
+    const edits = isCurrentUserPartyA ? disputeData.partyAEdits : disputeData.partyBEdits;
+    
     if (edits.length >= 2) {
       toast({
         title: "Edit Limit Reached",
@@ -188,28 +270,42 @@ Please provide a balanced settlement that addresses both parties' concerns and s
     const newEdits = [...edits, editText];
     setDisputeData(prev => ({
       ...prev,
-      [isPartyA ? 'partyAEdits' : 'partyBEdits']: newEdits,
-      finalSettlement: `${prev.generatedSettlement}\n\n${isPartyA ? 'Party A' : 'Party B'} Edit ${newEdits.length}: ${editText}`
+      [isCurrentUserPartyA ? 'partyAEdits' : 'partyBEdits']: newEdits,
+      finalSettlement: `${prev.generatedSettlement}\n\n${isCurrentUserPartyA ? 'Party A' : 'Party B'} Edit ${newEdits.length}: ${editText}`
     }));
 
-    // Switch to other party or move to checkout if both parties have made their edits
-    const otherPartyEdits = isPartyA ? disputeData.partyBEdits : disputeData.partyAEdits;
+    // Check if both parties have completed their edits
+    const otherPartyEdits = isCurrentUserPartyA ? disputeData.partyBEdits : disputeData.partyAEdits;
     if (newEdits.length === 2 && otherPartyEdits.length === 2) {
       setCurrentStep('checkout');
-    } else if (newEdits.length < 2) {
-      setIsPartyA(!isPartyA);
     }
   };
 
-  const handleCheckoutComplete = () => {
-    setCurrentStep('complete');
+  const handleCheckoutComplete = async () => {
+    try {
+      await supabase
+        .from('sessions')
+        .update({ 
+          status: 'completed',
+          settlement_terms: disputeData.finalSettlement 
+        })
+        .eq('id', sessionId);
+      
+      setCurrentStep('complete');
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
   };
 
   const downloadPDF = async () => {
     try {
       const { data, error } = await supabase.functions.invoke('generate-settlement-pdf', {
         body: { 
-          sessionId: disputeData.sessionId,
+          sessionId: sessionId,
           customSettlement: disputeData.finalSettlement
         }
       });
@@ -239,87 +335,113 @@ Please provide a balanced settlement that addresses both parties' concerns and s
     }
   };
 
-  const renderDisputeEntry = () => (
-    <Card className="w-full max-w-2xl mx-auto">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <FileText className="w-5 h-5" />
-          Enter Dispute Details
-        </CardTitle>
-        <CardDescription>
-          Describe the dispute that needs resolution
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div>
-          <Label htmlFor="title">Dispute Title</Label>
-          <Input
-            id="title"
-            value={disputeData.title}
-            onChange={(e) => setDisputeData(prev => ({ ...prev, title: e.target.value }))}
-            placeholder="Brief title for your dispute"
-          />
-        </div>
-        <div>
-          <Label htmlFor="description">Dispute Description</Label>
-          <Textarea
-            id="description"
-            value={disputeData.description}
-            onChange={(e) => setDisputeData(prev => ({ ...prev, description: e.target.value }))}
-            placeholder="Provide detailed information about the dispute..."
-            rows={6}
-          />
-        </div>
-        <Button onClick={handleDisputeSubmit} className="w-full">
-          Continue to Party Inputs <ArrowRight className="w-4 h-4 ml-2" />
-        </Button>
-      </CardContent>
-    </Card>
-  );
-
-  const renderPartyInputs = () => (
+  const renderWaitingForParty = () => (
     <Card className="w-full max-w-2xl mx-auto">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Users className="w-5 h-5" />
-          Party Preferred Outcomes
+          Waiting for Second Party
         </CardTitle>
         <CardDescription>
-          Both parties should enter their ideal resolution
+          Share the session code with the other party to begin
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
-        <div>
-          <Label htmlFor="partyA">Party A Preferred Outcome</Label>
-          <Textarea
-            id="partyA"
-            value={disputeData.partyAOutcome}
-            onChange={(e) => setDisputeData(prev => ({ ...prev, partyAOutcome: e.target.value }))}
-            placeholder="What would Party A consider a fair resolution?"
-            rows={4}
-          />
+      <CardContent className="space-y-6 text-center">
+        <div className="p-6 bg-muted rounded-lg">
+          <h3 className="text-lg font-semibold mb-2">Session Code</h3>
+          <div className="flex items-center justify-center gap-2">
+            <code className="text-2xl font-mono bg-background px-4 py-2 rounded">
+              {session?.session_code}
+            </code>
+            <Button variant="outline" size="sm" onClick={copySessionCode}>
+              <Copy className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
-        <div>
-          <Label htmlFor="partyB">Party B Preferred Outcome</Label>
-          <Textarea
-            id="partyB"
-            value={disputeData.partyBOutcome}
-            onChange={(e) => setDisputeData(prev => ({ ...prev, partyBOutcome: e.target.value }))}
-            placeholder="What would Party B consider a fair resolution?"
-            rows={4}
-          />
+
+        <div className="space-y-2">
+          <h4 className="font-semibold">Dispute Details:</h4>
+          <div className="text-left p-4 bg-muted/50 rounded">
+            <h5 className="font-medium">{session?.title}</h5>
+            <p className="text-sm text-muted-foreground mt-1">
+              {session?.dispute_description}
+            </p>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setCurrentStep('dispute')}>
-            <ArrowLeft className="w-4 h-4 mr-2" /> Back
-          </Button>
-          <Button onClick={handlePartyInputsSubmit} className="flex-1">
-            Generate Settlement <ArrowRight className="w-4 h-4 ml-2" />
-          </Button>
-        </div>
+
+        <p className="text-muted-foreground">
+          Once the second party joins, you'll both be able to enter your preferred outcomes.
+        </p>
       </CardContent>
     </Card>
   );
+
+  const renderPartyInputs = () => {
+    const isPartyA = userRole === 'party_a' || userRole === 'creator';
+    
+    return (
+      <Card className="w-full max-w-2xl mx-auto">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="w-5 h-5" />
+            Party Preferred Outcomes
+            <Badge variant="secondary">
+              You are {isPartyA ? 'Party A' : 'Party B'}
+            </Badge>
+          </CardTitle>
+          <CardDescription>
+            Both parties should enter their ideal resolution
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div>
+            <Label htmlFor="partyA">Party A Preferred Outcome</Label>
+            <Textarea
+              id="partyA"
+              value={disputeData.partyAOutcome}
+              onChange={(e) => setDisputeData(prev => ({ ...prev, partyAOutcome: e.target.value }))}
+              placeholder="What would Party A consider a fair resolution?"
+              rows={4}
+              disabled={!isPartyA}
+            />
+            {isPartyA && disputeData.partyAOutcome && (
+              <div className="flex items-center gap-2 mt-2 text-sm text-green-600">
+                <UserCheck className="w-4 h-4" />
+                Your input has been saved
+              </div>
+            )}
+          </div>
+          <div>
+            <Label htmlFor="partyB">Party B Preferred Outcome</Label>
+            <Textarea
+              id="partyB"
+              value={disputeData.partyBOutcome}
+              onChange={(e) => setDisputeData(prev => ({ ...prev, partyBOutcome: e.target.value }))}
+              placeholder="What would Party B consider a fair resolution?"
+              rows={4}
+              disabled={isPartyA}
+            />
+            {!isPartyA && disputeData.partyBOutcome && (
+              <div className="flex items-center gap-2 mt-2 text-sm text-green-600">
+                <UserCheck className="w-4 h-4" />
+                Your input has been saved
+              </div>
+            )}
+          </div>
+          
+          {disputeData.partyAOutcome && disputeData.partyBOutcome ? (
+            <Button onClick={handlePartyInputsSubmit} className="w-full">
+              Generate Settlement <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          ) : (
+            <div className="text-center text-muted-foreground">
+              Waiting for both parties to complete their inputs...
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
 
   const renderSettlementDraft = () => (
     <Card className="w-full max-w-2xl mx-auto">
@@ -349,14 +471,9 @@ Please provide a balanced settlement that addresses both parties' concerns and s
               <h4 className="font-semibold mb-2">Generated Settlement:</h4>
               <p className="whitespace-pre-wrap">{disputeData.generatedSettlement}</p>
             </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setCurrentStep('party-inputs')}>
-                <ArrowLeft className="w-4 h-4 mr-2" /> Back
-              </Button>
-              <Button onClick={() => setCurrentStep('edit-rounds')} className="flex-1">
-                Proceed to Edits <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-            </div>
+            <Button onClick={() => setCurrentStep('edit-rounds')} className="w-full">
+              Proceed to Edits <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
           </>
         )}
       </CardContent>
@@ -365,8 +482,9 @@ Please provide a balanced settlement that addresses both parties' concerns and s
 
   const renderEditRounds = () => {
     const [editText, setEditText] = useState('');
-    const currentPartyEdits = isPartyA ? disputeData.partyAEdits : disputeData.partyBEdits;
-    const otherPartyEdits = isPartyA ? disputeData.partyBEdits : disputeData.partyAEdits;
+    const isCurrentUserPartyA = userRole === 'party_a' || userRole === 'creator';
+    const currentPartyEdits = isCurrentUserPartyA ? disputeData.partyAEdits : disputeData.partyBEdits;
+    const otherPartyEdits = isCurrentUserPartyA ? disputeData.partyBEdits : disputeData.partyAEdits;
     
     return (
       <Card className="w-full max-w-2xl mx-auto">
@@ -375,7 +493,7 @@ Please provide a balanced settlement that addresses both parties' concerns and s
             <Edit className="w-5 h-5" />
             Edit Rounds
             <Badge variant="secondary">
-              {isPartyA ? 'Party A' : 'Party B'} Turn
+              You are {isCurrentUserPartyA ? 'Party A' : 'Party B'}
             </Badge>
           </CardTitle>
           <CardDescription>
@@ -409,11 +527,11 @@ Please provide a balanced settlement that addresses both parties' concerns and s
             <p className="whitespace-pre-wrap text-sm">{disputeData.finalSettlement}</p>
           </div>
 
-          {currentPartyEdits.length < 2 && (otherPartyEdits.length < 2 || currentPartyEdits.length < otherPartyEdits.length) ? (
+          {currentPartyEdits.length < 2 ? (
             <>
               <div>
                 <Label htmlFor="edit">
-                  {isPartyA ? 'Party A' : 'Party B'} Edit {currentPartyEdits.length + 1}
+                  {isCurrentUserPartyA ? 'Party A' : 'Party B'} Edit {currentPartyEdits.length + 1}
                 </Label>
                 <Textarea
                   id="edit"
@@ -442,14 +560,7 @@ Please provide a balanced settlement that addresses both parties' concerns and s
                 </Button>
               ) : (
                 <p className="text-muted-foreground">
-                  Waiting for {isPartyA ? 'Party B' : 'Party A'} to complete their edits...
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setIsPartyA(!isPartyA)}
-                    className="ml-2"
-                  >
-                    Switch to {isPartyA ? 'Party B' : 'Party A'}
-                  </Button>
+                  You have completed your edits. Waiting for the other party...
                 </p>
               )}
             </div>
@@ -530,15 +641,17 @@ Please provide a balanced settlement that addresses both parties' concerns and s
   );
 
   if (!user) return null;
+  if (loading) return <div className="min-h-screen bg-background flex items-center justify-center">Loading...</div>;
+  if (!session) return <div className="min-h-screen bg-background flex items-center justify-center">Session not found</div>;
 
   return (
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold">Structured Dispute Resolution</h1>
+          <h1 className="text-3xl font-bold">Dispute Resolution</h1>
           <p className="text-muted-foreground">
-            Follow the guided process to resolve your dispute efficiently
+            Session Code: <code className="bg-muted px-2 py-1 rounded">{session.session_code}</code>
           </p>
         </div>
 
@@ -546,8 +659,8 @@ Please provide a balanced settlement that addresses both parties' concerns and s
         <div className="w-full max-w-2xl mx-auto">
           <Progress value={stepProgress[currentStep]} className="h-2" />
           <div className="flex justify-between text-xs text-muted-foreground mt-2">
-            <span>Dispute Entry</span>
-            <span>Party Inputs</span>
+            <span>Waiting</span>
+            <span>Inputs</span>
             <span>Settlement</span>
             <span>Edits</span>
             <span>Checkout</span>
@@ -556,7 +669,7 @@ Please provide a balanced settlement that addresses both parties' concerns and s
         </div>
 
         {/* Step Content */}
-        {currentStep === 'dispute' && renderDisputeEntry()}
+        {currentStep === 'waiting-for-party' && renderWaitingForParty()}
         {currentStep === 'party-inputs' && renderPartyInputs()}
         {currentStep === 'settlement-draft' && renderSettlementDraft()}
         {currentStep === 'edit-rounds' && renderEditRounds()}
@@ -564,14 +677,12 @@ Please provide a balanced settlement that addresses both parties' concerns and s
         {currentStep === 'complete' && renderComplete()}
 
         {/* Payment Modal */}
-        {disputeData.sessionId && disputeData.sessionCode && (
-          <PaymentModal
-            isOpen={paymentModalOpen}
-            onClose={() => setPaymentModalOpen(false)}
-            sessionId={disputeData.sessionId}
-            sessionCode={disputeData.sessionCode}
-          />
-        )}
+        <PaymentModal
+          isOpen={paymentModalOpen}
+          onClose={() => setPaymentModalOpen(false)}
+          sessionId={sessionId!}
+          sessionCode={session.session_code}
+        />
       </div>
     </div>
   );

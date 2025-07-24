@@ -34,6 +34,8 @@ const App = () => (
             <Route path="/create-session" element={<CreateSession />} />
             <Route path="/join-session" element={<JoinSession />} />
             <Route path="/mediation/:sessionId" element={<Mediation />} />
+            <Route path="/dispute-resolution" element={<DisputeResolution />} />
+            <Route path="/dispute-resolution/:sessionId" element={<DisputeResolution />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/how-it-works" element={<HowItWorks />} />

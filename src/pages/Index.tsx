@@ -78,17 +78,12 @@ const Index = () => {
                   <>
                     <Link to="/create-session">
                       <Button variant="hero" size="lg" className="w-full sm:w-auto">
-                        Start Mediation Session
+                        Start New Dispute
                       </Button>
                     </Link>
                     <Link to="/join-session">
                       <Button variant="outline" size="lg" className="w-full sm:w-auto">
                         Join Existing Session
-                      </Button>
-                    </Link>
-                    <Link to="/dispute-resolution">
-                      <Button variant="secondary" size="lg" className="w-full sm:w-auto">
-                        Structured Resolution
                       </Button>
                     </Link>
                   </>
