@@ -14,6 +14,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      docusign_envelopes: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          download_url: string | null
+          envelope_id: string
+          id: string
+          party_a_signed: boolean | null
+          party_b_signed: boolean | null
+          session_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          download_url?: string | null
+          envelope_id: string
+          id?: string
+          party_a_signed?: boolean | null
+          party_b_signed?: boolean | null
+          session_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          download_url?: string | null
+          envelope_id?: string
+          id?: string
+          party_a_signed?: boolean | null
+          party_b_signed?: boolean | null
+          session_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "docusign_envelopes_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           content: string

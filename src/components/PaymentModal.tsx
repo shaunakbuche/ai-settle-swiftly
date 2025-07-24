@@ -55,6 +55,17 @@ export default function PaymentModal({ isOpen, onClose, sessionId, sessionCode }
       window.open(data.url, '_blank');
       
       onClose();
+      
+      // Also create DocuSign envelope after successful payment setup
+      setTimeout(async () => {
+        try {
+          await supabase.functions.invoke('create-docusign-envelope', {
+            body: { sessionId }
+          });
+        } catch (envelopeError) {
+          console.error('Failed to create DocuSign envelope:', envelopeError);
+        }
+      }, 2000);
     } catch (error: any) {
       console.error('Payment error:', error);
       toast({
