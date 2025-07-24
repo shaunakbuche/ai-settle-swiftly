@@ -11,6 +11,7 @@ import JoinSession from "./pages/JoinSession";
 import Legal from "./pages/Legal";
 import Mediation from "./pages/Mediation";
 import Pricing from "./pages/Pricing";
+import Checkout from "./pages/Checkout";
 import HowItWorks from "./pages/HowItWorks";
 import Analytics from "./pages/Analytics";
 import NotFound from "./pages/NotFound";
@@ -33,6 +34,7 @@ const App = () => (
             <Route path="/join-session" element={<JoinSession />} />
             <Route path="/mediation/:sessionId" element={<Mediation />} />
             <Route path="/pricing" element={<Pricing />} />
+            <Route path="/checkout" element={<Checkout />} />
             <Route path="/how-it-works" element={<HowItWorks />} />
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/legal" element={<Legal />} />

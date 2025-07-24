@@ -59,9 +59,12 @@ const Pricing = () => {
                 </li>
               </ul>
             </CardContent>
-            <CardFooter>
+            <CardFooter className="space-y-2">
               <Button asChild className="w-full" variant="outline">
                 <Link to="/create-session">Start Free Session</Link>
+              </Button>
+              <Button asChild className="w-full" variant="ghost" size="sm">
+                <Link to="/checkout">Test Checkout</Link>
               </Button>
             </CardFooter>
           </Card>
@@ -99,9 +102,12 @@ const Pricing = () => {
                 </li>
               </ul>
             </CardContent>
-            <CardFooter>
+            <CardFooter className="space-y-2">
               <Button asChild className="w-full">
                 <Link to="/create-session">Get Started</Link>
+              </Button>
+              <Button asChild className="w-full" variant="ghost" size="sm">
+                <Link to="/checkout">Test Checkout</Link>
               </Button>
             </CardFooter>
           </Card>
