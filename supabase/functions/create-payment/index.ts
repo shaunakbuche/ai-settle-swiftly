@@ -39,9 +39,9 @@ serve(async (req) => {
     }
 
     // Calculate amount (apply promo code)
-    let amount = 500; // $5.00 in cents
+    let amount = 499; // $4.99 in cents
     if (promoCode === "FIRST25") {
-      amount = 250; // 50% off
+      amount = 249; // 50% off
     }
 
     const session = await stripe.checkout.sessions.create({
