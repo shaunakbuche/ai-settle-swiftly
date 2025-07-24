@@ -1,218 +1,343 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { TrendingUp, Users, MessageSquare, CheckCircle, Clock, DollarSign, ArrowLeft } from "lucide-react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { Activity, Users, FileText, TrendingUp, Clock, CheckCircle, ArrowLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import ErrorState from '@/components/ErrorState';
+
+interface AnalyticsSummary {
+  date: string;
+  event_type: string;
+  event_count: number;
+  unique_users: number;
+  unique_sessions: number;
+}
+
+interface SessionStats {
+  total_sessions: number;
+  active_sessions: number;
+  completed_sessions: number;
+  avg_resolution_time: number;
+}
+
+const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', 'hsl(var(--muted))'];
 
 const Analytics = () => {
-  // Mock data - in real app, this would come from your database
-  const stats = {
-    totalSessions: 1247,
-    successfulResolutions: 934,
-    averageResolutionTime: "18 hours",
-    totalRevenue: 4670,
-    activeUsers: 156,
-    messagesExchanged: 45892
+  const [analytics, setAnalytics] = useState<AnalyticsSummary[]>([]);
+  const [sessionStats, setSessionStats] = useState<SessionStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      await Promise.all([fetchAnalytics(), fetchSessionStats()]);
+    } catch (err) {
+      console.error('Failed to fetch analytics data:', err);
+      setError('Failed to load analytics data');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const successRate = Math.round((stats.successfulResolutions / stats.totalSessions) * 100);
+  const fetchAnalytics = async () => {
+    const { data, error } = await supabase
+      .from('analytics_summary')
+      .select('*')
+      .order('date', { ascending: false })
+      .limit(30);
 
-  const recentSessions = [
-    { id: "S-2024-001", status: "Resolved", type: "Contract Dispute", duration: "12h", amount: "$5.00" },
-    { id: "S-2024-002", status: "In Progress", type: "Property Damage", duration: "6h", amount: "-" },
-    { id: "S-2024-003", status: "Resolved", type: "Refund Request", duration: "8h", amount: "$5.00" },
-    { id: "S-2024-004", status: "Pending", type: "Service Complaint", duration: "2h", amount: "-" },
-  ];
+    if (error) throw error;
+    setAnalytics(data || []);
+  };
 
-  const disputeTypes = [
-    { type: "Contract Disputes", count: 423, percentage: 34 },
-    { type: "Refund Requests", count: 312, percentage: 25 },
-    { type: "Property Damage", count: 267, percentage: 21 },
-    { type: "Service Complaints", count: 189, percentage: 15 },
-    { type: "Other", count: 56, percentage: 5 },
-  ];
+  const fetchSessionStats = async () => {
+    const { data: sessions, error } = await supabase
+      .from('sessions')
+      .select('status, created_at, updated_at');
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
-      {/* Navigation Header */}
-      <div className="border-b border-border/10">
-        <div className="container mx-auto px-4 py-4">
+    if (error) throw error;
+
+    const stats = {
+      total_sessions: sessions?.length || 0,
+      active_sessions: sessions?.filter(s => s.status === 'active').length || 0,
+      completed_sessions: sessions?.filter(s => s.status === 'completed').length || 0,
+      avg_resolution_time: 0
+    };
+
+    // Calculate average resolution time for completed sessions
+    const completedSessions = sessions?.filter(s => s.status === 'completed') || [];
+    if (completedSessions.length > 0) {
+      const totalTime = completedSessions.reduce((sum, session) => {
+        const created = new Date(session.created_at).getTime();
+        const updated = new Date(session.updated_at).getTime();
+        return sum + (updated - created);
+      }, 0);
+      stats.avg_resolution_time = Math.round(totalTime / completedSessions.length / (1000 * 60 * 60)); // Hours
+    }
+
+    setSessionStats(stats);
+  };
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+        <div className="container mx-auto py-8">
           <Button asChild variant="ghost" className="mb-4">
             <Link to="/" className="flex items-center gap-2">
               <ArrowLeft className="h-4 w-4" />
               Back to Home
             </Link>
           </Button>
+          <ErrorState
+            title="Analytics Unavailable"
+            description={error}
+            retry={fetchData}
+          />
         </div>
       </div>
-      
-      <div className="container mx-auto px-4 py-16">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-            Platform Analytics
-          </h1>
-          <p className="text-xl text-muted-foreground">
-            Real-time insights into our mediation platform performance
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+        <div className="container mx-auto py-8">
+          <Button asChild variant="ghost" className="mb-4">
+            <Link to="/" className="flex items-center gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Back to Home
+            </Link>
+          </Button>
+          <div className="animate-pulse space-y-8">
+            <div className="h-8 bg-muted rounded w-1/3"></div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="h-32 bg-muted rounded"></div>
+              ))}
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {[...Array(2)].map((_, i) => (
+                <div key={i} className="h-80 bg-muted rounded"></div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Aggregate data for charts
+  const dailyActivity = analytics.reduce((acc, item) => {
+    const date = new Date(item.date).toLocaleDateString();
+    const existing = acc.find(a => a.date === date);
+    if (existing) {
+      existing.events += item.event_count;
+      existing.users += item.unique_users;
+    } else {
+      acc.push({
+        date,
+        events: item.event_count,
+        users: item.unique_users
+      });
+    }
+    return acc;
+  }, [] as { date: string; events: number; users: number }[]).slice(0, 7).reverse();
+
+  const eventTypeData = analytics.reduce((acc, item) => {
+    const existing = acc.find(a => a.name === item.event_type);
+    if (existing) {
+      existing.value += item.event_count;
+    } else {
+      acc.push({
+        name: item.event_type,
+        value: item.event_count
+      });
+    }
+    return acc;
+  }, [] as { name: string; value: number }[]);
+
+  const successRate = sessionStats && sessionStats.total_sessions > 0
+    ? Math.round((sessionStats.completed_sessions / sessionStats.total_sessions) * 100)
+    : 0;
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+      <div className="container mx-auto py-8 space-y-8">
+        <Button asChild variant="ghost" className="mb-4">
+          <Link to="/" className="flex items-center gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            Back to Home
+          </Link>
+        </Button>
+
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Analytics Dashboard</h1>
+          <p className="text-muted-foreground">
+            Track dispute resolution metrics and user engagement
           </p>
         </div>
 
         {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Sessions</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
+              <FileText className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.totalSessions.toLocaleString()}</div>
-              <p className="text-xs text-muted-foreground">
-                <TrendingUp className="inline h-3 w-3 mr-1" />
-                +12% from last month
-              </p>
+              <div className="text-2xl font-bold">{sessionStats?.total_sessions || 0}</div>
+              <p className="text-xs text-muted-foreground">All mediation sessions</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Success Rate</CardTitle>
+              <CardTitle className="text-sm font-medium">Active Sessions</CardTitle>
+              <Activity className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{sessionStats?.active_sessions || 0}</div>
+              <p className="text-xs text-muted-foreground">Currently in progress</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Completed</CardTitle>
               <CheckCircle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{successRate}%</div>
-              <p className="text-xs text-muted-foreground">
-                {stats.successfulResolutions} successful resolutions
-              </p>
+              <div className="text-2xl font-bold">{sessionStats?.completed_sessions || 0}</div>
+              <p className="text-xs text-muted-foreground">Successfully resolved</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Avg Resolution Time</CardTitle>
+              <CardTitle className="text-sm font-medium">Avg Resolution</CardTitle>
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.averageResolutionTime}</div>
-              <p className="text-xs text-muted-foreground">
-                <TrendingUp className="inline h-3 w-3 mr-1" />
-                15% faster than industry average
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Revenue Generated</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">${stats.totalRevenue.toLocaleString()}</div>
-              <p className="text-xs text-muted-foreground">
-                From {stats.successfulResolutions} completed agreements
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Users</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.activeUsers}</div>
-              <p className="text-xs text-muted-foreground">
-                Currently in mediation sessions
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Messages Exchanged</CardTitle>
-              <MessageSquare className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.messagesExchanged.toLocaleString()}</div>
-              <p className="text-xs text-muted-foreground">
-                Total platform messages
-              </p>
+              <div className="text-2xl font-bold">{sessionStats?.avg_resolution_time || 0}h</div>
+              <p className="text-xs text-muted-foreground">Time to completion</p>
             </CardContent>
           </Card>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-8">
-          {/* Dispute Types */}
+        {/* Charts */}
+        {analytics.length > 0 ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Daily Activity</CardTitle>
+                <CardDescription>Events and unique users over the last 7 days</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={dailyActivity}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="events" fill="hsl(var(--primary))" name="Events" />
+                    <Bar dataKey="users" fill="hsl(var(--secondary))" name="Users" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Event Distribution</CardTitle>
+                <CardDescription>Breakdown of user actions and interactions</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={eventTypeData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {eventTypeData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
+        ) : (
           <Card>
-            <CardHeader>
-              <CardTitle>Dispute Types</CardTitle>
-              <CardDescription>Distribution of mediation cases by category</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {disputeTypes.map((item, index) => (
-                <div key={index} className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>{item.type}</span>
-                    <span className="text-muted-foreground">{item.count} cases</span>
-                  </div>
-                  <Progress value={item.percentage} className="h-2" />
-                </div>
-              ))}
+            <CardContent className="text-center py-8">
+              <Activity className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-medium">No Analytics Data Yet</h3>
+              <p className="text-muted-foreground">
+                Analytics will appear here once users start using the platform
+              </p>
             </CardContent>
           </Card>
+        )}
 
-          {/* Recent Sessions */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Sessions</CardTitle>
-              <CardDescription>Latest mediation activity</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {recentSessions.map((session, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-sm">{session.id}</span>
-                        <Badge variant={
-                          session.status === "Resolved" ? "default" :
-                          session.status === "In Progress" ? "secondary" : "outline"
-                        }>
-                          {session.status}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground">{session.type}</p>
-                    </div>
-                    <div className="text-right text-sm">
-                      <div className="font-medium">{session.amount}</div>
-                      <div className="text-muted-foreground">{session.duration}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Success Metrics */}
-        <Card className="mt-8">
+        {/* Resolution Success Rate */}
+        <Card>
           <CardHeader>
-            <CardTitle>Platform Performance</CardTitle>
-            <CardDescription>Key indicators of mediation effectiveness</CardDescription>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              Resolution Success Rate
+            </CardTitle>
+            <CardDescription>
+              Percentage of sessions reaching successful settlement
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid md:grid-cols-3 gap-6">
-              <div className="text-center">
-                <div className="text-3xl font-bold text-primary mb-2">{successRate}%</div>
-                <p className="text-sm text-muted-foreground">Resolution Rate</p>
+            <div className="flex items-center space-x-4">
+              <div className="flex-1">
+                <div className="text-3xl font-bold text-primary">
+                  {successRate}%
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  {sessionStats?.completed_sessions || 0} of {sessionStats?.total_sessions || 0} sessions completed
+                </p>
               </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-primary mb-2">4.8/5</div>
-                <p className="text-sm text-muted-foreground">User Satisfaction</p>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-primary mb-2">92%</div>
-                <p className="text-sm text-muted-foreground">Agreement Compliance</p>
-              </div>
+              {sessionStats && sessionStats.total_sessions > 0 && (
+                <div className="w-32 h-32">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { name: 'Completed', value: sessionStats.completed_sessions },
+                          { name: 'Other', value: sessionStats.total_sessions - sessionStats.completed_sessions }
+                        ]}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={30}
+                        outerRadius={60}
+                        paddingAngle={5}
+                        dataKey="value"
+                      >
+                        <Cell fill="hsl(var(--primary))" />
+                        <Cell fill="hsl(var(--muted))" />
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
