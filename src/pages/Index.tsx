@@ -86,6 +86,11 @@ const Index = () => {
                         Join Existing Session
                       </Button>
                     </Link>
+                    <Link to="/dispute-resolution">
+                      <Button variant="secondary" size="lg" className="w-full sm:w-auto">
+                        Structured Resolution
+                      </Button>
+                    </Link>
                   </>
                 ) : (
                   <Link to="/auth">

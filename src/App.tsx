@@ -17,6 +17,7 @@ import Analytics from "./pages/Analytics";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import PaymentSuccess from "./pages/PaymentSuccess";
+import DisputeResolution from "./pages/DisputeResolution";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +39,7 @@ const App = () => (
             <Route path="/how-it-works" element={<HowItWorks />} />
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/legal" element={<Legal />} />
+            <Route path="/dispute-resolution" element={<DisputeResolution />} />
             <Route path="/payment-success" element={<PaymentSuccess />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
