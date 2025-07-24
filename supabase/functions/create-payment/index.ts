@@ -8,17 +8,59 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Rate limiting
+const rateLimiter = new Map<string, number[]>();
+
+function isRateLimited(clientIP: string): boolean {
+  const now = Date.now();
+  const windowMs = 60000; // 1 minute
+  const maxRequests = 5; // 5 payment requests per minute
+  
+  const requests = rateLimiter.get(clientIP) || [];
+  const recentRequests = requests.filter(time => time > now - windowMs);
+  
+  if (recentRequests.length >= maxRequests) {
+    return true;
+  }
+  
+  recentRequests.push(now);
+  rateLimiter.set(clientIP, recentRequests);
+  return false;
+}
+
+function validateInput(input: unknown, maxLength: number = 100): boolean {
+  if (typeof input !== 'string') return false;
+  if (input.length > maxLength) return false;
+  if (input.trim().length === 0) return false;
+  
+  const dangerousPatterns = [
+    /<script/i,
+    /javascript:/i,
+    /on\w+\s*=/i,
+  ];
+  
+  return !dangerousPatterns.some(pattern => pattern.test(input));
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const supabaseClient = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_ANON_KEY") ?? ""
-  );
-
   try {
+    // Rate limiting
+    const clientIP = req.headers.get('x-forwarded-for') || 'unknown';
+    if (isRateLimited(clientIP)) {
+      return new Response(JSON.stringify({ error: 'Too many requests' }), {
+        status: 429,
+        headers: corsHeaders,
+      });
+    }
+
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? ""
+    );
     const authHeader = req.headers.get("Authorization")!;
     const token = authHeader.replace("Bearer ", "");
     const { data } = await supabaseClient.auth.getUser(token);
@@ -26,6 +68,15 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated");
 
     const { sessionId, promoCode } = await req.json();
+    
+    // Validate inputs
+    if (!sessionId || !validateInput(sessionId, 100)) {
+      throw new Error("Invalid session ID");
+    }
+    
+    if (promoCode && !validateInput(promoCode, 20)) {
+      throw new Error("Invalid promo code");
+    }
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2023-10-16",
@@ -72,7 +123,11 @@ serve(async (req) => {
     });
   } catch (error: any) {
     console.error("Payment creation error:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    
+    // Return sanitized error message
+    const sanitizedMessage = 'Unable to process payment request at this time';
+    
+    return new Response(JSON.stringify({ error: sanitizedMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });

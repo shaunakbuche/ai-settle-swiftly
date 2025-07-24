@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { CreditCard, Tag } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { validateInput } from "@/lib/security";
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -23,6 +24,15 @@ export default function PaymentModal({ isOpen, onClose, sessionId, sessionCode }
   const { toast } = useToast();
 
   const applyPromoCode = () => {
+    if (!validateInput(promoCode, 20)) {
+      toast({
+        title: "Invalid promo code",
+        description: "Please enter a valid promo code.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     if (promoCode.toUpperCase() === "FIRST25") {
       setDiscount(50);
       toast({

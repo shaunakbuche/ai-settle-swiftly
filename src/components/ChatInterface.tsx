@@ -7,6 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Send, Users, Bot } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { sanitizeHTML, validateInput } from "@/lib/security";
 
 interface Message {
   id: string;
@@ -37,6 +38,10 @@ export default function ChatInterface({
 
   const handleSendMessage = () => {
     if (!newMessage.trim()) return;
+    if (!validateInput(newMessage, 500)) {
+      console.error('Invalid message content');
+      return;
+    }
     onSendMessage(newMessage);
     setNewMessage("");
   };
@@ -89,7 +94,12 @@ export default function ChatInterface({
                         {getSenderName(message)}
                       </span>
                     </div>
-                    <p className="text-sm">{message.content}</p>
+                    <p 
+                      className="text-sm" 
+                      dangerouslySetInnerHTML={{ 
+                        __html: sanitizeHTML(message.content) 
+                      }} 
+                    />
                     <p className="text-xs opacity-70 mt-1">
                       {new Date(message.created_at).toLocaleTimeString()}
                     </p>

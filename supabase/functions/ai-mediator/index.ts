@@ -7,6 +7,54 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Rate limiting
+const rateLimiter = new Map<string, number[]>();
+
+function isRateLimited(clientIP: string): boolean {
+  const now = Date.now();
+  const windowMs = 60000; // 1 minute
+  const maxRequests = 30; // 30 requests per minute for AI calls
+  
+  const requests = rateLimiter.get(clientIP) || [];
+  const recentRequests = requests.filter(time => time > now - windowMs);
+  
+  if (recentRequests.length >= maxRequests) {
+    return true;
+  }
+  
+  recentRequests.push(now);
+  rateLimiter.set(clientIP, recentRequests);
+  return false;
+}
+
+function validateInput(input: unknown, maxLength: number = 1000): boolean {
+  if (typeof input !== 'string') return false;
+  if (input.length > maxLength) return false;
+  if (input.trim().length === 0) return false;
+  
+  const dangerousPatterns = [
+    /<script/i,
+    /javascript:/i,
+    /on\w+\s*=/i,
+    /data:text\/html/i,
+  ];
+  
+  return !dangerousPatterns.some(pattern => pattern.test(input));
+}
+
+function sanitizeText(text: string): string {
+  return text.replace(/[<>'"&]/g, (match) => {
+    const map: { [key: string]: string } = {
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#x27;',
+      '&': '&amp;',
+    };
+    return map[match];
+  });
+}
+
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL') ?? '',
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -199,8 +247,34 @@ serve(async (req) => {
   }
 
   try {
+    // Rate limiting
+    const clientIP = req.headers.get('x-forwarded-for') || 'unknown';
+    if (isRateLimited(clientIP)) {
+      return new Response(JSON.stringify({ error: 'Too many requests' }), {
+        status: 429,
+        headers: corsHeaders,
+      });
+    }
     const { sessionId, action, messages } = await req.json();
     console.log('Enhanced AI mediator request:', { sessionId, action, messages: messages?.length });
+    
+    // Validate inputs
+    if (!sessionId || !validateInput(sessionId, 100)) {
+      throw new Error("Invalid session ID");
+    }
+    
+    if (!action || !validateInput(action, 50)) {
+      throw new Error("Invalid action");
+    }
+    
+    // Validate and sanitize messages if provided
+    if (messages && Array.isArray(messages)) {
+      messages.forEach((msg: any) => {
+        if (msg.content && !validateInput(msg.content, 2000)) {
+          throw new Error("Invalid message content");
+        }
+      });
+    }
 
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openAIApiKey) {
@@ -416,9 +490,13 @@ The formal document will be available for review and signature after payment pro
 
   } catch (error) {
     console.error('Enhanced AI mediator error:', error);
+    
+    // Return sanitized error message
+    const sanitizedMessage = 'Unable to process AI mediation request at this time';
+    
     return new Response(JSON.stringify({ 
       success: false, 
-      error: error.message 
+      error: sanitizedMessage
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

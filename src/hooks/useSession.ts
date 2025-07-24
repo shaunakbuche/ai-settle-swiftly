@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { generateSessionCode, validateInput, sanitizeText } from '@/lib/security';
 
 interface SessionData {
   id: string;
@@ -94,6 +95,18 @@ export const useSession = (sessionId?: string) => {
 
   const sendMessage = async (content: string, messageType: 'text' | 'system' | 'ai_response' | 'settlement_proposal' = 'text') => {
     if (!session || !profile) return;
+    
+    // Validate and sanitize content
+    if (!validateInput(content, 500)) {
+      toast({
+        title: "Invalid message",
+        description: "Message content is invalid or too long.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const sanitizedContent = sanitizeText(content);
 
     try {
       const senderRole: 'party_a' | 'party_b' | 'mediator' = profile.id === session.party_a_id ? 'party_a' : 
@@ -105,7 +118,7 @@ export const useSession = (sessionId?: string) => {
           session_id: session.id,
           sender_id: profile.id,
           sender_role: senderRole,
-          content,
+          content: sanitizedContent,
           message_type: messageType,
         })
         .select()
@@ -130,7 +143,7 @@ export const useSession = (sessionId?: string) => {
     if (!profile) return null;
 
     try {
-      const sessionCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const sessionCode = generateSessionCode();
 
       const { data, error } = await supabase
         .from('sessions')

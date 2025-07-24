@@ -1,10 +1,31 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { SignJWT } from "https://deno.land/x/jose@v5.2.0/index.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Rate limiting
+const rateLimiter = new Map<string, number[]>();
+
+function isRateLimited(clientIP: string): boolean {
+  const now = Date.now();
+  const windowMs = 60000; // 1 minute
+  const maxRequests = 10;
+  
+  const requests = rateLimiter.get(clientIP) || [];
+  const recentRequests = requests.filter(time => time > now - windowMs);
+  
+  if (recentRequests.length >= maxRequests) {
+    return true;
+  }
+  
+  recentRequests.push(now);
+  rateLimiter.set(clientIP, recentRequests);
+  return false;
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -12,6 +33,14 @@ serve(async (req) => {
   }
 
   try {
+    // Rate limiting
+    const clientIP = req.headers.get('x-forwarded-for') || 'unknown';
+    if (isRateLimited(clientIP)) {
+      return new Response(JSON.stringify({ error: 'Too many requests' }), {
+        status: 429,
+        headers: corsHeaders,
+      });
+    }
     // Create Supabase service client
     const supabaseService = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -53,53 +82,38 @@ serve(async (req) => {
       throw new Error("Missing DocuSign configuration");
     }
 
-    // Generate JWT for DocuSign authentication
-    const header = {
-      alg: "RS256",
-      typ: "JWT"
-    };
-
-    const payload = {
-      iss: integrationKey,
-      sub: userId,
-      aud: "account-d.docusign.com",
-      iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + 3600,
-      scope: "signature impersonation"
-    };
-
-    // Create JWT (simplified - in production use proper JWT library)
-    const encoder = new TextEncoder();
-    const headerB64 = btoa(JSON.stringify(header));
-    const payloadB64 = btoa(JSON.stringify(payload));
-    const signatureInput = `${headerB64}.${payloadB64}`;
-
-    // Import private key for signing
-    const keyData = privateKey.replace(/-----BEGIN RSA PRIVATE KEY-----/, '')
-                             .replace(/-----END RSA PRIVATE KEY-----/, '')
-                             .replace(/\n/g, '');
+    // Generate secure JWT for DocuSign authentication
+    const now = Math.floor(Date.now() / 1000);
+    
+    // Properly format the private key
+    const formattedPrivateKey = privateKey.replace(/\\n/g, '\n');
+    
+    // Import the private key
+    const keyData = formattedPrivateKey
+      .replace(/-----BEGIN [^-]+-----/, '')
+      .replace(/-----END [^-]+-----/, '')
+      .replace(/\s/g, '');
     
     const binaryKey = Uint8Array.from(atob(keyData), c => c.charCodeAt(0));
     
     const cryptoKey = await crypto.subtle.importKey(
       'pkcs8',
       binaryKey,
-      {
-        name: 'RSASSA-PKCS1-v1_5',
-        hash: 'SHA-256',
-      },
+      { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
       false,
       ['sign']
     );
 
-    const signature = await crypto.subtle.sign(
-      'RSASSA-PKCS1-v1_5',
-      cryptoKey,
-      encoder.encode(signatureInput)
-    );
-
-    const signatureB64 = btoa(String.fromCharCode(...new Uint8Array(signature)));
-    const jwt = `${signatureInput}.${signatureB64}`;
+    const jwt = await new SignJWT({
+      iss: integrationKey,
+      sub: userId,
+      aud: "account-d.docusign.com",
+      scope: "signature impersonation"
+    })
+      .setProtectedHeader({ alg: 'RS256' })
+      .setIssuedAt(now)
+      .setExpirationTime(now + 3600) // 1 hour
+      .sign(cryptoKey);
 
     // Get DocuSign access token
     const tokenResponse = await fetch(`${baseUrl}/oauth/token`, {
@@ -145,12 +159,22 @@ serve(async (req) => {
         
         <div class="section">
           <h2>Dispute Description</h2>
-          <p>${sessionData.dispute_description || 'N/A'}</p>
+          <p>${(sessionData.dispute_description || 'N/A').replace(/[<>'"&]/g, (match) => {
+            const map: { [key: string]: string } = {
+              '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#x27;', '&': '&amp;'
+            };
+            return map[match];
+          })}</p>
         </div>
         
         <div class="section">
           <h2>Settlement Terms</h2>
-          <p>${sessionData.settlement_terms || 'Terms to be finalized upon signing.'}</p>
+          <p>${(sessionData.settlement_terms || 'Terms to be finalized upon signing.').replace(/[<>'"&]/g, (match) => {
+            const map: { [key: string]: string } = {
+              '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#x27;', '&': '&amp;'
+            };
+            return map[match];
+          })}</p>
         </div>
         
         ${sessionData.settlement_amount ? `
@@ -273,10 +297,14 @@ serve(async (req) => {
 
   } catch (error: any) {
     console.error('Create DocuSign envelope error:', error);
+    
+    // Return sanitized error message
+    const sanitizedMessage = 'Failed to create settlement agreement';
+    
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error.message || 'Failed to create DocuSign envelope' 
+        error: sanitizedMessage
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
