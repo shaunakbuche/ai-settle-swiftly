@@ -120,7 +120,7 @@ export default function PaymentModal({ isOpen, onClose, sessionId, sessionCode }
     }
   };
 
-  const originalPrice = 5.00;
+  const originalPrice = 4.99;
   const finalPrice = originalPrice * (1 - discount / 100);
 
   return (
