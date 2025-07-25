@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
+import logoShield from "@/assets/accordnow-logo-shield.png";
 
 const Auth = () => {
   const [loginEmail, setLoginEmail] = useState("");
@@ -50,8 +51,15 @@ const Auth = () => {
     <div className="min-h-screen bg-gradient-to-br from-background to-muted flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold">AccordNow</h1>
-          <p className="text-muted-foreground mt-2">AI-Powered Dispute Resolution</p>
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <img 
+              src={logoShield} 
+              alt="AccordNow" 
+              className="w-10 h-10"
+            />
+            <h1 className="text-3xl font-bold">AccordNow</h1>
+          </div>
+          <p className="text-muted-foreground">AI-Powered Dispute Resolution</p>
         </div>
 
         <Tabs defaultValue="login" className="w-full">

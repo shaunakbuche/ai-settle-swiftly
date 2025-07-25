@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useEffect } from 'react';
+import logoShield from "@/assets/accordnow-logo-shield.png";
 
 const Legal = () => {
   const { track } = useAnalytics();
@@ -18,13 +19,28 @@ const Legal = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+      <header className="border-b border-border/50 bg-background/80 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <Link to="/" className="flex items-center gap-3">
+              <img 
+                src={logoShield} 
+                alt="AccordNow" 
+                className="w-8 h-8"
+              />
+              <span className="text-xl font-bold text-foreground">AccordNow</span>
+            </Link>
+            <Button asChild variant="ghost">
+              <Link to="/" className="flex items-center gap-2">
+                <ArrowLeft className="h-4 w-4" />
+                Back to Home
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </header>
+      
       <div className="container mx-auto py-8 max-w-4xl space-y-8">
-        <Button asChild variant="ghost" className="mb-4">
-          <Link to="/" className="flex items-center gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Home
-          </Link>
-        </Button>
 
         <div className="text-center">
           <h1 className="text-3xl font-bold tracking-tight">Legal Information</h1>

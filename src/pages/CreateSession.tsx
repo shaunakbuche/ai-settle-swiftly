@@ -5,11 +5,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Users } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSession } from "@/hooks/useSession";
+import logoShield from "@/assets/accordnow-logo-shield.png";
 
 const CreateSession = () => {
   const [title, setTitle] = useState("");
@@ -67,9 +68,11 @@ const CreateSession = () => {
           <div className="flex justify-between items-center h-16">
             <Link to="/" className="flex items-center gap-2">
               <ArrowLeft className="w-5 h-5" />
-              <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-                <Users className="w-5 h-5 text-primary-foreground" />
-              </div>
+              <img 
+                src={logoShield} 
+                alt="AccordNow" 
+                className="w-8 h-8"
+              />
               <span className="text-xl font-bold text-foreground">AccordNow</span>
             </Link>
           </div>

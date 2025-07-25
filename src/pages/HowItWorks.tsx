@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Users, MessageSquare, Brain, FileText, PenTool, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
+import logoShield from "@/assets/accordnow-logo-shield.png";
 
 const HowItWorks = () => {
   const steps = [
@@ -41,16 +42,26 @@ const HowItWorks = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
       {/* Navigation Header */}
-      <div className="border-b border-border/10">
-        <div className="container mx-auto px-4 py-4">
-          <Button asChild variant="ghost" className="mb-4">
-            <Link to="/" className="flex items-center gap-2">
-              <ArrowLeft className="h-4 w-4" />
-              Back to Home
+      <header className="border-b border-border/50 bg-background/80 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <Link to="/" className="flex items-center gap-3">
+              <img 
+                src={logoShield} 
+                alt="AccordNow" 
+                className="w-8 h-8"
+              />
+              <span className="text-xl font-bold text-foreground">AccordNow</span>
             </Link>
-          </Button>
+            <Button asChild variant="ghost">
+              <Link to="/" className="flex items-center gap-2">
+                <ArrowLeft className="h-4 w-4" />
+                Back to Home
+              </Link>
+            </Button>
+          </div>
         </div>
-      </div>
+      </header>
       
       <div className="container mx-auto px-4 py-16">
         {/* Hero Section */}

@@ -4,11 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Users, ArrowLeft, Search } from "lucide-react";
+import { ArrowLeft, Search } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSession } from "@/hooks/useSession";
+import logoShield from "@/assets/accordnow-logo-shield.png";
 
 const JoinSession = () => {
   const [searchParams] = useSearchParams();
@@ -66,9 +67,11 @@ const JoinSession = () => {
           <div className="flex justify-between items-center h-16">
             <Link to="/" className="flex items-center gap-2">
               <ArrowLeft className="w-5 h-5" />
-              <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-                <Users className="w-5 h-5 text-primary-foreground" />
-              </div>
+              <img 
+                src={logoShield} 
+                alt="AccordNow" 
+                className="w-8 h-8"
+              />
               <span className="text-xl font-bold text-foreground">AccordNow</span>
             </Link>
           </div>
