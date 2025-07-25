@@ -10,6 +10,7 @@ import AIDiplomat from "@/components/AIDiplomat";
 import CyberButton from "@/components/CyberButton";
 import CyberCard from "@/components/CyberCard";
 import heroImage from "@/assets/hero-mediation.jpg";
+import logoShield from "@/assets/accordnow-logo-shield.png";
 
 const Index = () => {
   const { user, profile, signOut } = useAuth();
@@ -50,10 +51,12 @@ const Index = () => {
       <header className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-                <Users className="w-5 h-5 text-primary-foreground" />
-              </div>
+            <div className="flex items-center gap-3">
+              <img 
+                src={logoShield} 
+                alt="AccordNow" 
+                className="w-8 h-8"
+              />
               <span className="text-xl font-bold text-foreground">AccordNow</span>
             </div>
             
@@ -268,10 +271,12 @@ const Index = () => {
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-4 gap-8">
             <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-                  <Users className="w-5 h-5 text-primary-foreground" />
-                </div>
+              <div className="flex items-center gap-3">
+                <img 
+                  src={logoShield} 
+                  alt="AccordNow" 
+                  className="w-8 h-8"
+                />
                 <span className="text-xl font-bold text-foreground">AccordNow</span>
               </div>
               <p className="text-muted-foreground">
