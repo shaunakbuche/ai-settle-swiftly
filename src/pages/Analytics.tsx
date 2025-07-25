@@ -5,6 +5,8 @@ import { Activity, Users, FileText, TrendingUp, Clock, CheckCircle, ArrowLeft } 
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useUserRole } from '@/hooks/useUserRole';
+import { ExportButton } from '@/components/ExportButton';
 import ErrorState from '@/components/ErrorState';
 
 interface AnalyticsSummary {
@@ -27,8 +29,10 @@ const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accen
 const Analytics = () => {
   const [analytics, setAnalytics] = useState<AnalyticsSummary[]>([]);
   const [sessionStats, setSessionStats] = useState<SessionStats | null>(null);
+  const [rawSessionData, setRawSessionData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { isAdmin, loading: roleLoading } = useUserRole();
 
   useEffect(() => {
     fetchData();
@@ -61,9 +65,19 @@ const Analytics = () => {
   const fetchSessionStats = async () => {
     const { data: sessions, error } = await supabase
       .from('sessions')
-      .select('status, created_at, updated_at');
+      .select('id, title, status, created_at, updated_at, settlement_amount, is_settled');
 
     if (error) throw error;
+
+    // Store raw data for export
+    setRawSessionData(sessions?.map(session => ({
+      id: session.id,
+      title: session.title,
+      status: session.status,
+      created_at: new Date(session.created_at).toLocaleDateString(),
+      settlement_amount: session.settlement_amount || 0,
+      is_settled: session.is_settled ? 'Yes' : 'No',
+    })) || []);
 
     const stats = {
       total_sessions: sessions?.length || 0,
@@ -85,6 +99,53 @@ const Analytics = () => {
 
     setSessionStats(stats);
   };
+
+  if (loading || roleLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+        <div className="container mx-auto py-8">
+          <Button asChild variant="ghost" className="mb-4">
+            <Link to="/" className="flex items-center gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Back to Home
+            </Link>
+          </Button>
+          <div className="animate-pulse space-y-8">
+            <div className="h-8 bg-muted rounded w-1/3"></div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="h-32 bg-muted rounded"></div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+        <div className="container mx-auto py-8">
+          <Button asChild variant="ghost" className="mb-4">
+            <Link to="/" className="flex items-center gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Back to Home
+            </Link>
+          </Button>
+          <div className="text-center py-16">
+            <h1 className="text-2xl font-bold mb-4">Access Denied</h1>
+            <p className="text-muted-foreground mb-4">
+              You need administrator privileges to view analytics.
+            </p>
+            <Button asChild>
+              <Link to="/">Return to Dashboard</Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (error) {
     return (
@@ -171,12 +232,19 @@ const Analytics = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
       <div className="container mx-auto py-8 space-y-8">
-        <Button asChild variant="ghost" className="mb-4">
-          <Link to="/" className="flex items-center gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Home
-          </Link>
-        </Button>
+        <div className="flex justify-between items-center">
+          <Button asChild variant="ghost">
+            <Link to="/" className="flex items-center gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Back to Home
+            </Link>
+          </Button>
+          <ExportButton 
+            data={rawSessionData}
+            filename="session-analytics"
+            title="Session Analytics Report"
+          />
+        </div>
 
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Analytics Dashboard</h1>

@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { SecurityHeaders } from "@/components/SecurityHeaders";
+import { AccessibilityProvider } from "@/components/AccessibilityProvider";
 import Index from "./pages/Index";
 import CreateSession from "./pages/CreateSession";
 import JoinSession from "./pages/JoinSession";
@@ -15,6 +16,7 @@ import Pricing from "./pages/Pricing";
 import Checkout from "./pages/Checkout";
 import HowItWorks from "./pages/HowItWorks";
 import Analytics from "./pages/Analytics";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import PaymentSuccess from "./pages/PaymentSuccess";
@@ -26,7 +28,8 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <SecurityHeaders />
     <AuthProvider>
-      <TooltipProvider>
+      <AccessibilityProvider>
+        <TooltipProvider>
         <Toaster />
         <Sonner />
         <BrowserRouter>
@@ -43,6 +46,7 @@ const App = () => (
             <Route path="/how-it-works" element={<HowItWorks />} />
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/legal" element={<Legal />} />
+            <Route path="/profile" element={<Profile />} />
             <Route path="/dispute-resolution" element={<DisputeResolution />} />
             <Route path="/payment-success" element={<PaymentSuccess />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
@@ -50,6 +54,7 @@ const App = () => (
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
+      </AccessibilityProvider>
     </AuthProvider>
   </QueryClientProvider>
 );
