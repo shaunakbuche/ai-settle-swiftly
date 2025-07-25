@@ -226,7 +226,7 @@ const Index = () => {
           <Card className="shadow-elegant border-border/50 max-w-md mx-auto">
             <CardHeader className="text-center">
               <CardTitle className="text-2xl">Per Agreement</CardTitle>
-              <div className="text-4xl font-bold text-primary">$5</div>
+              <div className="text-4xl font-bold text-primary">$4.99</div>
               <CardDescription>Only charged when both parties reach agreement</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -251,8 +251,8 @@ const Index = () => {
               
               <div className="pt-4 border-t border-border">
                 <div className="bg-accent/10 rounded-lg p-3 mb-4">
-                  <div className="font-semibold text-accent">First 25 agreements FREE</div>
-                  <div className="text-sm text-muted-foreground">Use code: FIRST25</div>
+                  <div className="font-semibold text-accent">50% OFF First Agreement</div>
+                  <div className="text-sm text-muted-foreground">Use code: FIRST25 → Just $2.49</div>
                 </div>
                 <Button variant="hero" size="lg" className="w-full">
                   Start Free Session

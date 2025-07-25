@@ -81,7 +81,7 @@ const Pricing = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold mb-2">$5</div>
+              <div className="text-3xl font-bold mb-2">$4.99</div>
               <div className="text-sm text-muted-foreground mb-6">per successful agreement</div>
               <ul className="space-y-3">
                 <li className="flex items-center gap-2">
@@ -122,7 +122,7 @@ const Pricing = () => {
             <CardContent>
               <Badge variant="secondary" className="mb-2">FIRST25</Badge>
               <p className="text-sm text-muted-foreground">
-                Use code FIRST25 for 50% off your first agreement
+                Use code FIRST25 for 50% off your first agreement → Just $2.49
               </p>
             </CardContent>
           </Card>
@@ -135,7 +135,7 @@ const Pricing = () => {
             <div>
               <h3 className="font-semibold mb-2">When do I pay?</h3>
               <p className="text-muted-foreground text-sm">
-                You only pay the $5 fee when both parties agree to a settlement and sign the legal document.
+                You only pay the $4.99 fee when both parties agree to a settlement and sign the legal document.
               </p>
             </div>
             <div>
