@@ -23,7 +23,7 @@ export default function PaymentModal({ isOpen, onClose, sessionId, sessionCode }
   const [discount, setDiscount] = useState(0);
   const { toast } = useToast();
 
-  const applyPromoCode = () => {
+  const applyPromoCode = async () => {
     if (!validateInput(promoCode, 20)) {
       toast({
         title: "Invalid promo code",
@@ -33,19 +33,51 @@ export default function PaymentModal({ isOpen, onClose, sessionId, sessionCode }
       return;
     }
     
-    if (promoCode.toUpperCase() === "FIRST25") {
-      setDiscount(50);
+    setLoading(true);
+    try {
+      // Validate promo code against database
+      const { data: promoCodeData, error } = await supabase
+        .from('promo_codes')
+        .select('*')
+        .eq('code', promoCode.trim().toUpperCase())
+        .single();
+
+      if (error || !promoCodeData) {
+        toast({
+          title: "Invalid promo code",
+          description: "Please check your code and try again.",
+          variant: "destructive",
+        });
+        setDiscount(0);
+        return;
+      }
+
+      // Check if promo code has usage limit
+      if (promoCodeData.usage_limit && promoCodeData.used_count >= promoCodeData.usage_limit) {
+        toast({
+          title: "Promo code expired",
+          description: "This promo code has reached its usage limit.",
+          variant: "destructive",
+        });
+        setDiscount(0);
+        return;
+      }
+
+      setDiscount(promoCodeData.discount_percentage);
       toast({
         title: "Promo code applied!",
-        description: "50% discount applied to your settlement fee.",
+        description: `${promoCodeData.discount_percentage}% discount has been applied to your order.`,
       });
-    } else {
-      setDiscount(0);
+    } catch (error) {
+      console.error('Promo code error:', error);
       toast({
-        title: "Invalid promo code",
-        description: "Please check your promo code and try again.",
+        title: "Error",
+        description: "Failed to apply promo code. Please try again.",
         variant: "destructive",
       });
+      setDiscount(0);
+    } finally {
+      setLoading(false);
     }
   };
 

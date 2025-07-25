@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { SecurityHeaders } from "@/components/SecurityHeaders";
 import Index from "./pages/Index";
 import CreateSession from "./pages/CreateSession";
 import JoinSession from "./pages/JoinSession";
@@ -23,6 +24,7 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
+    <SecurityHeaders />
     <AuthProvider>
       <TooltipProvider>
         <Toaster />

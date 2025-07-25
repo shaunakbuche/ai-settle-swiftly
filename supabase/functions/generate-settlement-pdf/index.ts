@@ -7,9 +7,85 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Rate limiting
+const requests = new Map<string, number[]>();
+
+function isRateLimited(clientIP: string): boolean {
+  const now = Date.now();
+  const windowMs = 60000; // 1 minute
+  const maxRequests = 10; // 10 requests per minute
+  
+  const userRequests = requests.get(clientIP) || [];
+  const recentRequests = userRequests.filter(time => now - time < windowMs);
+  
+  if (recentRequests.length >= maxRequests) {
+    return true;
+  }
+  
+  recentRequests.push(now);
+  requests.set(clientIP, recentRequests);
+  return false;
+}
+
+// Input validation
+function validateInput(input: unknown, maxLength: number = 1000): boolean {
+  if (typeof input !== 'string') return false;
+  if (input.length > maxLength) return false;
+  if (input.trim().length === 0) return false;
+  
+  const dangerousPatterns = [
+    /<script/i,
+    /javascript:/i,
+    /on\w+\s*=/i,
+    /data:text\/html/i,
+  ];
+  
+  return !dangerousPatterns.some(pattern => pattern.test(input));
+}
+
+// Sanitize HTML content
+function sanitizeHTML(dirty: string): string {
+  return dirty.replace(/[<>'"&]/g, (match) => {
+    const map: { [key: string]: string } = {
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#x27;',
+      '&': '&amp;',
+    };
+    return map[match];
+  });
+}
+
+// Secure error response
+function createSecureErrorResponse(error: unknown, statusCode: number = 500): Response {
+  console.error('Settlement PDF generation error:', error);
+  
+  const sanitizedMessage = error instanceof Error 
+    ? 'Failed to generate settlement document'
+    : 'Internal server error';
+    
+  return new Response(
+    JSON.stringify({ error: sanitizedMessage }),
+    {
+      status: statusCode,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    }
+  );
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // Rate limiting
+  const clientIP = req.headers.get('x-forwarded-for') || 'unknown';
+  if (isRateLimited(clientIP)) {
+    return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), {
+      status: 429,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 
   const supabaseClient = createClient(
@@ -19,7 +95,13 @@ serve(async (req) => {
   );
 
   try {
-    const { sessionId } = await req.json();
+    const body = await req.json();
+    const { sessionId } = body;
+
+    // Validate input
+    if (!validateInput(sessionId, 36)) {
+      return createSecureErrorResponse(new Error('Invalid session ID'), 400);
+    }
 
     // Fetch session data
     const { data: session, error: sessionError } = await supabaseClient
@@ -70,20 +152,20 @@ serve(async (req) => {
         
         <div class="parties">
           <h2>PARTIES</h2>
-          <p><strong>Party A:</strong> ${partyA?.full_name || 'Unknown'}</p>
-          <p><strong>Party B:</strong> ${partyB?.full_name || 'Unknown'}</p>
+          <p><strong>Party A:</strong> ${sanitizeHTML(partyA?.full_name || 'Unknown')}</p>
+          <p><strong>Party B:</strong> ${sanitizeHTML(partyB?.full_name || 'Unknown')}</p>
         </div>
 
         <div class="terms">
           <h2>DISPUTE DESCRIPTION</h2>
-          <p>${session.dispute_description || 'No description provided'}</p>
+          <p>${sanitizeHTML(session.dispute_description || 'No description provided')}</p>
           
           <h2>SETTLEMENT TERMS</h2>
-          <p>${session.settlement_terms || 'Settlement terms to be added.'}</p>
+          <p>${sanitizeHTML(session.settlement_terms || 'Settlement terms to be added.')}</p>
           
           ${session.settlement_amount ? `
           <h2>SETTLEMENT AMOUNT</h2>
-          <p>$${session.settlement_amount}</p>
+          <p>$${sanitizeHTML(session.settlement_amount.toString())}</p>
           ` : ''}
         </div>
 
@@ -94,13 +176,13 @@ serve(async (req) => {
           <div style="display: flex; justify-content: space-between; margin-top: 40px;">
             <div>
               <div class="signature-line"></div>
-              <p><strong>${partyA?.full_name || 'Party A'}</strong></p>
+              <p><strong>${sanitizeHTML(partyA?.full_name || 'Party A')}</strong></p>
               <p>Date: _____________</p>
             </div>
             
             <div>
               <div class="signature-line"></div>
-              <p><strong>${partyB?.full_name || 'Party B'}</strong></p>
+              <p><strong>${sanitizeHTML(partyB?.full_name || 'Party B')}</strong></p>
               <p>Date: _____________</p>
             </div>
           </div>
@@ -111,16 +193,12 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({ 
       html: settlementHtml,
-      filename: `settlement-${session.session_code}.html`
+      filename: `settlement-${sanitizeHTML(session.session_code)}.html`
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
   } catch (error: any) {
-    console.error("Settlement generation error:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
+    return createSecureErrorResponse(error);
   }
 });

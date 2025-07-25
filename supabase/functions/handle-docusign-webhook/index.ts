@@ -6,9 +6,66 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Rate limiting
+const requests = new Map<string, number[]>();
+
+function isRateLimited(clientIP: string): boolean {
+  const now = Date.now();
+  const windowMs = 60000; // 1 minute
+  const maxRequests = 30; // 30 requests per minute for webhooks
+  
+  const userRequests = requests.get(clientIP) || [];
+  const recentRequests = userRequests.filter(time => now - time < windowMs);
+  
+  if (recentRequests.length >= maxRequests) {
+    return true;
+  }
+  
+  recentRequests.push(now);
+  requests.set(clientIP, recentRequests);
+  return false;
+}
+
+// Input validation for webhook data
+function validateWebhookData(data: any): boolean {
+  if (!data || typeof data !== 'object') return false;
+  if (!data.data || !data.event) return false;
+  if (typeof data.event !== 'string') return false;
+  if (data.event.length > 100) return false;
+  
+  return true;
+}
+
+// Secure error response
+function createSecureErrorResponse(error: unknown, statusCode: number = 500): Response {
+  console.error('DocuSign webhook error:', error);
+  
+  const sanitizedMessage = 'Webhook processing failed';
+    
+  return new Response(
+    JSON.stringify({ 
+      success: false, 
+      error: sanitizedMessage 
+    }),
+    {
+      status: statusCode,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    }
+  );
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // Rate limiting
+  const clientIP = req.headers.get('x-forwarded-for') || 'unknown';
+  if (isRateLimited(clientIP)) {
+    return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), {
+      status: 429,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 
   try {
@@ -22,14 +79,19 @@ serve(async (req) => {
     // Parse DocuSign webhook data
     const webhookData = await req.json();
     
-    console.log('DocuSign webhook received:', JSON.stringify(webhookData, null, 2));
+    // Validate webhook data
+    if (!validateWebhookData(webhookData)) {
+      return createSecureErrorResponse(new Error('Invalid webhook data'), 400);
+    }
+    
+    console.log('DocuSign webhook received - Event:', webhookData.event);
 
     // Extract envelope information
     const envelopeId = webhookData.data?.envelopeId;
     const status = webhookData.event;
     
-    if (!envelopeId) {
-      throw new Error("Envelope ID not found in webhook data");
+    if (!envelopeId || typeof envelopeId !== 'string' || envelopeId.length > 100) {
+      return createSecureErrorResponse(new Error("Invalid envelope ID"), 400);
     }
 
     // Update envelope status in database
@@ -101,16 +163,6 @@ serve(async (req) => {
     );
 
   } catch (error: any) {
-    console.error('DocuSign webhook error:', error);
-    return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: error.message || 'Failed to process webhook' 
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      }
-    );
+    return createSecureErrorResponse(error);
   }
 });
