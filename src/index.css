@@ -8,99 +8,72 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 215 28% 17%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 215 28% 17%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 215 28% 17%;
-
-    --primary: 217 91% 60%;
-    --primary-foreground: 0 0% 98%;
-    --primary-glow: 217 91% 70%;
-
-    --secondary: 214 32% 91%;
-    --secondary-foreground: 215 28% 17%;
-
-    --muted: 220 14% 96%;
-    --muted-foreground: 215 16% 47%;
-
-    --accent: 142 76% 36%;
-    --accent-foreground: 0 0% 98%;
-
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 217 91% 60%;
-
-    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
-    --gradient-hero: linear-gradient(180deg, hsl(220 14% 96%), hsl(0 0% 100%));
-    --gradient-success: linear-gradient(135deg, hsl(var(--accent)), hsl(142 76% 46%));
+    /* Cyberpunk Base Colors */
+    --background: 0 0% 5%;
+    --foreground: 180 100% 95%;
+    --card: 0 0% 8%;
+    --card-foreground: 180 100% 95%;
+    --popover: 0 0% 8%;
+    --popover-foreground: 180 100% 95%;
     
-    --shadow-glow: 0 10px 40px -10px hsl(var(--primary) / 0.3);
-    --shadow-elegant: 0 4px 20px -2px hsl(215 28% 17% / 0.08);
+    /* Neon Primary - Electric Blue */
+    --primary: 193 100% 50%;
+    --primary-foreground: 0 0% 5%;
+    --primary-glow: 193 100% 60%;
     
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Neon Secondary - Hot Pink */
+    --secondary: 324 100% 50%;
+    --secondary-foreground: 0 0% 95%;
+    --secondary-glow: 324 100% 60%;
+    
+    /* Neon Accent - Electric Violet */
+    --accent: 270 100% 50%;
+    --accent-foreground: 0 0% 95%;
+    --accent-glow: 270 100% 60%;
+    
+    /* Muted Cyberpunk Tones */
+    --muted: 0 0% 15%;
+    --muted-foreground: 180 10% 65%;
+    
+    /* Destructive - Neon Red */
+    --destructive: 0 100% 50%;
+    --destructive-foreground: 0 0% 95%;
+    
+    /* UI Elements */
+    --border: 180 50% 20%;
+    --input: 0 0% 12%;
+    --ring: 193 100% 50%;
+    
+    /* Cyberpunk Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
+    --gradient-accent: linear-gradient(45deg, hsl(var(--accent)), hsl(var(--primary)));
+    --gradient-dark: linear-gradient(180deg, hsl(0 0% 8%), hsl(0 0% 3%));
+    
+    /* Neon Glows */
+    --glow-primary: 0 0 20px hsl(var(--primary) / 0.5);
+    --glow-secondary: 0 0 20px hsl(var(--secondary) / 0.5);
+    --glow-accent: 0 0 20px hsl(var(--accent) / 0.5);
+    
+    /* Holographic Effects */
+    --holo-shimmer: linear-gradient(90deg, transparent, hsl(var(--primary) / 0.1), transparent);
+    
+    --radius: 0.75rem;
 
-    --radius: 0.5rem;
-
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 0 0% 8%;
+    --sidebar-foreground: 180 100% 95%;
+    --sidebar-primary: 193 100% 50%;
+    --sidebar-primary-foreground: 0 0% 5%;
+    --sidebar-accent: 270 100% 50%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 180 50% 20%;
+    --sidebar-ring: 193 100% 50%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Dark mode inherits cyberpunk theme */
+    --background: 0 0% 3%;
+    --card: 0 0% 6%;
+    --border: 180 30% 15%;
   }
 }
 
@@ -110,6 +83,116 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    background: var(--gradient-dark);
+    color: hsl(var(--foreground));
+    font-family: 'Inter', 'Orbitron', monospace;
+    overflow-x: hidden;
+  }
+
+  /* Cyberpunk Animations */
+  @keyframes neon-pulse {
+    0%, 100% { box-shadow: var(--glow-primary); }
+    50% { box-shadow: var(--glow-primary), 0 0 40px hsl(var(--primary) / 0.8); }
+  }
+
+  @keyframes glitch {
+    0% { transform: translate(0); }
+    20% { transform: translate(-2px, 2px); }
+    40% { transform: translate(-2px, -2px); }
+    60% { transform: translate(2px, 2px); }
+    80% { transform: translate(2px, -2px); }
+    100% { transform: translate(0); }
+  }
+
+  @keyframes scan-line {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+
+  @keyframes hologram-flicker {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+  }
+
+  @keyframes data-stream {
+    0% { transform: translateY(100vh); opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { transform: translateY(-100vh); opacity: 0; }
+  }
+
+  /* Cyberpunk Utility Classes */
+  .neon-border {
+    border: 1px solid hsl(var(--primary));
+    box-shadow: var(--glow-primary);
+  }
+
+  .neon-text {
+    color: hsl(var(--primary));
+    text-shadow: 0 0 10px hsl(var(--primary) / 0.8);
+  }
+
+  .cyber-glass {
+    background: linear-gradient(135deg, 
+      hsl(var(--primary) / 0.1), 
+      hsl(var(--secondary) / 0.05)
+    );
+    backdrop-filter: blur(10px);
+    border: 1px solid hsl(var(--border));
+  }
+
+  .glitch-text {
+    animation: glitch 0.3s ease-in-out infinite;
+  }
+
+  .scan-effect::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--gradient-primary);
+    animation: scan-line 2s linear infinite;
+  }
+
+  .hologram {
+    animation: hologram-flicker 3s ease-in-out infinite;
+  }
+
+  /* AI Diplomat Styling */
+  .ai-diplomat-container {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ai-diplomat-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: var(--holo-shimmer);
+    animation: scan-line 3s linear infinite;
+    pointer-events: none;
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--background));
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--gradient-primary);
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--gradient-accent);
   }
 }

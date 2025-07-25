@@ -1,13 +1,49 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Check, Clock, Shield, Users, Zap, Bot, LogOut } from "lucide-react";
+import { ArrowRight, Shield, Users, FileText, CheckCircle, Star, Zap, Brain, Cpu, Eye, Check, Clock, Bot, LogOut } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { useEffect } from "react";
+import AIDiplomat from "@/components/AIDiplomat";
+import CyberButton from "@/components/CyberButton";
+import CyberCard from "@/components/CyberCard";
 import heroImage from "@/assets/hero-mediation.jpg";
 
 const Index = () => {
   const { user, profile, signOut } = useAuth();
+  const { track } = useAnalytics();
+
+  useEffect(() => {
+    track({
+      event_type: 'page_view',
+      event_data: { page: 'home' }
+    });
+  }, [track]);
+
+  const features = [
+    {
+      icon: Brain,
+      title: "AI Diplomat Protocol",
+      description: "Advanced neural networks analyze disputes and propose optimal resolution pathways in real-time."
+    },
+    {
+      icon: Shield,
+      title: "Quantum Encryption",
+      description: "Military-grade security protocols ensure absolute confidentiality of all negotiations."
+    },
+    {
+      icon: Cpu,
+      title: "Smart Contract Generation",  
+      description: "Auto-generated legal documents with blockchain verification and digital signatures."
+    },
+    {
+      icon: Eye,
+      title: "Predictive Analytics",
+      description: "AI-powered outcome prediction helps parties understand likely settlement scenarios."
+    }
+  ];
   return (
     <div className="min-h-screen bg-gradient-hero">
       {/* Header */}
