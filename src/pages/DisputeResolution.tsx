@@ -11,7 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { FileText, Users, Edit, CreditCard, Download, ArrowRight, ArrowLeft, Copy, UserCheck } from "lucide-react";
+import { FileText, Users, Edit, CreditCard, Download, ArrowRight, ArrowLeft, Copy, UserCheck, Home, LogOut, SkipBack, SkipForward } from "lucide-react";
 import PaymentModal from "@/components/PaymentModal";
 
 interface SessionData {
@@ -167,6 +167,39 @@ export default function DisputeResolution() {
         description: "Session code copied to clipboard"
       });
     }
+  };
+
+  const handleLeaveDispute = () => {
+    if (confirm("Are you sure you want to leave this dispute? You can rejoin using the session code.")) {
+      navigate('/');
+    }
+  };
+
+  const handleGoBack = () => {
+    const steps: Step[] = ['waiting-for-party', 'party-inputs', 'settlement-draft', 'edit-rounds', 'checkout', 'complete'];
+    const currentIndex = steps.indexOf(currentStep);
+    if (currentIndex > 0) {
+      setCurrentStep(steps[currentIndex - 1]);
+    }
+  };
+
+  const handleGoForward = () => {
+    const steps: Step[] = ['waiting-for-party', 'party-inputs', 'settlement-draft', 'edit-rounds', 'checkout', 'complete'];
+    const currentIndex = steps.indexOf(currentStep);
+    if (currentIndex < steps.length - 1) {
+      setCurrentStep(steps[currentIndex + 1]);
+    }
+  };
+
+  const canGoBack = () => {
+    const steps: Step[] = ['waiting-for-party', 'party-inputs', 'settlement-draft', 'edit-rounds', 'checkout', 'complete'];
+    return steps.indexOf(currentStep) > 0;
+  };
+
+  const canGoForward = () => {
+    const steps: Step[] = ['waiting-for-party', 'party-inputs', 'settlement-draft', 'edit-rounds', 'checkout', 'complete'];
+    const currentIndex = steps.indexOf(currentStep);
+    return currentIndex < steps.length - 1 && currentIndex >= 0;
   };
 
   const handlePartyInputsSubmit = async () => {
@@ -653,6 +686,40 @@ Please provide a balanced settlement that addresses both parties' concerns and s
           <p className="text-muted-foreground">
             Session Code: <code className="bg-muted px-2 py-1 rounded">{session.session_code}</code>
           </p>
+        </div>
+
+        {/* Navigation Controls */}
+        <div className="flex justify-between items-center max-w-2xl mx-auto">
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleGoBack}
+              disabled={!canGoBack()}
+            >
+              <SkipBack className="w-4 h-4 mr-2" />
+              Back
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleGoForward}
+              disabled={!canGoForward()}
+            >
+              <SkipForward className="w-4 h-4 mr-2" />
+              Forward
+            </Button>
+          </div>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleLeaveDispute}
+            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            Leave Dispute
+          </Button>
         </div>
 
         {/* Progress Bar */}
