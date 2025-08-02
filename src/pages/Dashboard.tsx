@@ -24,6 +24,7 @@ import PartyDashboard from "@/components/PartyDashboard";
 import SessionProgress from "@/components/SessionProgress";
 import PartyNotifications from "@/components/PartyNotifications";
 import SessionStats from "@/components/SessionStats";
+import { LegalTemplateManager } from "@/components/LegalTemplateManager";
 import logoShield from "@/assets/accordnow-logo-shield.png";
 
 interface Session {
@@ -241,6 +242,7 @@ export default function Dashboard() {
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="sessions">My Sessions</TabsTrigger>
+            <TabsTrigger value="templates">Legal Templates</TabsTrigger>
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
@@ -259,6 +261,10 @@ export default function Dashboard() {
 
           <TabsContent value="sessions">
             <PartyDashboard sessions={sessions} onRefresh={fetchUserSessions} view="detailed" />
+          </TabsContent>
+
+          <TabsContent value="templates">
+            <LegalTemplateManager />
           </TabsContent>
 
           <TabsContent value="notifications">
