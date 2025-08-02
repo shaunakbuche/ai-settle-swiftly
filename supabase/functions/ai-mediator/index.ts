@@ -256,7 +256,11 @@ serve(async (req) => {
       });
     }
     const { sessionId, action, messages } = await req.json();
-    console.log('Enhanced AI mediator request:', { sessionId, action, messages: messages?.length });
+    console.log('AI mediator request received:', {
+      sessionId,
+      action: action || 'undefined',
+      messageCount: messages?.length || 0,
+    });
     
     // Validate inputs
     if (!sessionId || !validateInput(sessionId, 100)) {
@@ -489,7 +493,7 @@ The formal document will be available for review and signature after payment pro
     });
 
   } catch (error) {
-    console.error('Enhanced AI mediator error:', error);
+    console.error('AI mediator error:', error.message || 'Unknown error');
     
     // Return sanitized error message
     const sanitizedMessage = 'Unable to process AI mediation request at this time';

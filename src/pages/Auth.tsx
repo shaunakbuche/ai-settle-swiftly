@@ -55,14 +55,23 @@ const Auth = () => {
     setLoading(true);
     
     try {
+      // Basic rate limiting - prevent rapid requests
+      const lastRequest = localStorage.getItem('lastPasswordResetRequest');
+      if (lastRequest && Date.now() - parseInt(lastRequest) < 60000) {
+        throw new Error('Please wait 1 minute before requesting another reset');
+      }
+      
       const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
         redirectTo: `${window.location.origin}/auth?tab=reset-password`,
       });
       
       if (error) throw error;
+      
+      // Record the request time for rate limiting
+      localStorage.setItem('lastPasswordResetRequest', Date.now().toString());
       setResetSent(true);
-    } catch (error) {
-      console.error("Password reset error:", error);
+    } catch (error: any) {
+      console.error("Password reset error:", error?.message || 'Unknown error');
     } finally {
       setLoading(false);
     }

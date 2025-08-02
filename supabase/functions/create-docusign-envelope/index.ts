@@ -281,7 +281,7 @@ serve(async (req) => {
       console.error('Failed to store envelope info:', insertError);
     }
 
-    console.log('DocuSign envelope created successfully:', envelopeData.envelopeId);
+    console.log('DocuSign envelope created successfully for session:', sessionId);
 
     return new Response(
       JSON.stringify({
@@ -296,7 +296,7 @@ serve(async (req) => {
     );
 
   } catch (error: any) {
-    console.error('Create DocuSign envelope error:', error);
+    console.error('DocuSign envelope creation failed:', error instanceof Error ? error.message : 'Unknown error');
     
     // Return sanitized error message
     const sanitizedMessage = 'Failed to create settlement agreement';
