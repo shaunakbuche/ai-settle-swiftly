@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Bot, CheckCircle, Clock, AlertCircle, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAIMediator } from "@/hooks/useAIMediator";
+import ConversationGuidance from "./ConversationGuidance";
+import { useConversationAnalysis } from "@/hooks/useConversationAnalysis";
 
 interface Message {
   id: string;
@@ -31,6 +33,13 @@ export default function AIMediatorPanel({
 }: AIMediatorPanelProps) {
   const [currentAISummary, setCurrentAISummary] = useState(aiSummary);
   const { requestAIAction, loading } = useAIMediator();
+  const { 
+    extractedInfo, 
+    metrics, 
+    recommendations, 
+    advanceStage,
+    isAnalyzing 
+  } = useConversationAnalysis(sessionId, messages);
 
   const getProgressSteps = () => {
     const steps = [
@@ -89,7 +98,7 @@ export default function AIMediatorPanel({
           <CardTitle className="flex items-center gap-2">
             <Bot className="w-5 h-5 text-purple-500" />
             AI Mediator
-            {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+            {(loading || isAnalyzing) && <Loader2 className="w-4 h-4 animate-spin" />}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -168,6 +177,15 @@ export default function AIMediatorPanel({
           </Button>
         </CardContent>
       </Card>
+
+      {/* Enhanced Conversation Guidance */}
+      <ConversationGuidance
+        sessionStage={metrics.currentStage}
+        messages={messages}
+        sessionProgress={metrics.progressScore}
+        onStageAdvance={advanceStage}
+        extractedInfo={extractedInfo}
+      />
     </div>
   );
 }

@@ -8,6 +8,8 @@ import { Separator } from "@/components/ui/separator";
 import { Send, Users, Bot } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { sanitizeHTML, validateInput } from "@/lib/security";
+import ChatPrompts from "./ChatPrompts";
+import { useConversationAnalysis } from "@/hooks/useConversationAnalysis";
 
 interface Message {
   id: string;
@@ -25,6 +27,7 @@ interface ChatInterfaceProps {
   disputeDescription: string;
   currentUserRole: string;
   profiles: { [key: string]: { full_name: string } };
+  sessionId: string;
 }
 
 export default function ChatInterface({ 
@@ -32,9 +35,11 @@ export default function ChatInterface({
   onSendMessage, 
   disputeDescription, 
   currentUserRole,
-  profiles 
+  profiles,
+  sessionId 
 }: ChatInterfaceProps) {
   const [newMessage, setNewMessage] = useState("");
+  const { metrics } = useConversationAnalysis(sessionId, messages);
 
   const handleSendMessage = () => {
     if (!newMessage.trim()) return;
@@ -44,6 +49,10 @@ export default function ChatInterface({
     }
     onSendMessage(newMessage);
     setNewMessage("");
+  };
+
+  const handlePromptSelect = (prompt: string) => {
+    onSendMessage(prompt);
   };
 
   const getSenderName = (message: Message) => {
@@ -111,6 +120,13 @@ export default function ChatInterface({
         </ScrollArea>
 
         <Separator />
+
+        {/* Smart Chat Prompts */}
+        <ChatPrompts 
+          sessionStage={metrics.currentStage}
+          onPromptSelect={handlePromptSelect}
+          userRole={currentUserRole as 'party_a' | 'party_b' | 'mediator'}
+        />
 
         <div className="flex gap-2">
           <Input
