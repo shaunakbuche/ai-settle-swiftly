@@ -312,6 +312,17 @@ export type Database = {
       }
     }
     Functions: {
+      assign_user_role: {
+        Args: {
+          _user_id: string
+          _role: Database["public"]["Enums"]["app_role"]
+        }
+        Returns: boolean
+      }
+      bootstrap_admin_access: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: Database["public"]["Enums"]["app_role"]
