@@ -14,7 +14,8 @@ const MobileNavigation = () => {
   const { isAdmin } = useUserRole();
 
   const navigationItems = [
-    { href: '/', label: 'Dashboard', icon: Home },
+    { href: '/', label: 'Home', icon: Home },
+    ...(user ? [{ href: '/dashboard', label: 'Dashboard', icon: BarChart3 }] : []),
     { href: '/pricing', label: 'Pricing', icon: DollarSign },
     { href: '/how-it-works', label: 'How It Works', icon: Info },
     { href: '/legal', label: 'Legal', icon: FileText },

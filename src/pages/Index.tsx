@@ -72,6 +72,9 @@ const Index = () => {
               </Link>
               {user ? (
                 <div className="flex items-center gap-4">
+                  <Link to="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">
+                    Dashboard
+                  </Link>
                   <span className="text-sm text-muted-foreground">
                     Welcome, {profile?.full_name || user.email}
                   </span>
@@ -115,14 +118,14 @@ const Index = () => {
               <div className="flex flex-col sm:flex-row gap-4">
                 {user ? (
                   <>
-                    <Link to="/create-session">
+                    <Link to="/dashboard">
                       <Button variant="hero" size="lg" className="w-full sm:w-auto">
-                        Start New Dispute
+                        View Dashboard
                       </Button>
                     </Link>
-                    <Link to="/join-session">
+                    <Link to="/create-session">
                       <Button variant="outline" size="lg" className="w-full sm:w-auto">
-                        Join Existing Session
+                        Start New Dispute
                       </Button>
                     </Link>
                   </>

@@ -19,6 +19,7 @@ import Analytics from "./pages/Analytics";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
+import Dashboard from "./pages/Dashboard";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import DisputeResolution from "./pages/DisputeResolution";
 
@@ -36,6 +37,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/create-session" element={<CreateSession />} />
             <Route path="/join-session" element={<JoinSession />} />
             <Route path="/mediation/:sessionId" element={<Mediation />} />
