@@ -179,7 +179,14 @@ export const useSession = (sessionId?: string) => {
   };
 
   const joinSession = async (sessionCode: string) => {
-    if (!profile) return null;
+    if (!profile) {
+      toast({
+        title: "Authentication Required",
+        description: "Please ensure you're logged in to join a session.",
+        variant: "destructive",
+      });
+      return null;
+    }
 
     try {
       // First, find the session
@@ -190,13 +197,44 @@ export const useSession = (sessionId?: string) => {
         .maybeSingle();
 
       if (findError) {
+        console.error('Error finding session:', findError);
         throw findError;
       }
 
       if (!sessionData) {
         toast({
           title: "Session not found",
-          description: "Invalid session code.",
+          description: "The session code you entered is invalid or the session no longer exists.",
+          variant: "destructive",
+        });
+        return null;
+      }
+
+      // Check if user is already part of this session
+      if (sessionData.party_a_id === profile.id || sessionData.party_b_id === profile.id) {
+        toast({
+          title: "Already joined",
+          description: "You're already a participant in this session.",
+          variant: "destructive",
+        });
+        return sessionData;
+      }
+
+      // Check if session is already full
+      if (sessionData.party_b_id) {
+        toast({
+          title: "Session full",
+          description: "This session already has two participants.",
+          variant: "destructive",
+        });
+        return null;
+      }
+
+      // Check if session is still in waiting status
+      if (sessionData.status !== 'waiting') {
+        toast({
+          title: "Session unavailable",
+          description: `This session is ${sessionData.status} and cannot be joined.`,
           variant: "destructive",
         });
         return null;
@@ -210,26 +248,47 @@ export const useSession = (sessionId?: string) => {
           status: 'active',
         })
         .eq('id', sessionData.id)
+        .eq('status', 'waiting') // Additional safety check
+        .eq('party_b_id', null) // Ensure it's still empty
         .select()
         .single();
 
       if (error) {
-        throw error;
+        console.error('Error joining session:', error);
+        if (error.code === 'PGRST116') {
+          toast({
+            title: "Session unavailable",
+            description: "This session is no longer available or has already been joined by someone else.",
+            variant: "destructive",
+          });
+        } else {
+          throw error;
+        }
+        return null;
       }
 
       toast({
-        title: "Joined session",
+        title: "Joined session successfully",
         description: "You have successfully joined the mediation session.",
       });
 
       return data;
     } catch (error: any) {
       console.error('Error joining session:', error);
-      toast({
-        title: "Error",
-        description: "Failed to join session.",
-        variant: "destructive",
-      });
+      
+      if (error.message?.includes('policy')) {
+        toast({
+          title: "Permission denied",
+          description: "You don't have permission to join this session.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Connection error",
+          description: "Failed to join session. Please check your internet connection and try again.",
+          variant: "destructive",
+        });
+      }
       return null;
     }
   };
