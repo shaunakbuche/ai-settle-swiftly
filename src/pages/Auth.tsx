@@ -55,23 +55,28 @@ const Auth = () => {
     setLoading(true);
     
     try {
-      // Basic rate limiting - prevent rapid requests
-      const lastRequest = localStorage.getItem('lastPasswordResetRequest');
-      if (lastRequest && Date.now() - parseInt(lastRequest) < 60000) {
-        throw new Error('Please wait 1 minute before requesting another reset');
+      // Input validation
+      if (!resetEmail) {
+        throw new Error('Email is required');
       }
-      
-      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-        redirectTo: `${window.location.origin}/auth?tab=reset-password`,
+
+      // Use the secure password reset edge function
+      const { data, error } = await supabase.functions.invoke('secure-password-reset', {
+        body: { email: resetEmail },
       });
-      
-      if (error) throw error;
-      
-      // Record the request time for rate limiting
-      localStorage.setItem('lastPasswordResetRequest', Date.now().toString());
+
+      if (error) {
+        throw new Error(error.message || 'Failed to send reset email');
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
       setResetSent(true);
     } catch (error: any) {
       console.error("Password reset error:", error?.message || 'Unknown error');
+      // Toast will be shown by the edge function or error handling
     } finally {
       setLoading(false);
     }
@@ -150,17 +155,18 @@ const Auth = () => {
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSignUp} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="fullName">Full Name</Label>
-                    <Input
-                      id="fullName"
-                      type="text"
-                      placeholder="Enter your full name"
-                      value={signupFullName}
-                      onChange={(e) => setSignupFullName(e.target.value)}
-                      required
-                    />
-                  </div>
+                   <div className="space-y-2">
+                     <Label htmlFor="fullName">Full Name</Label>
+                     <Input
+                       id="fullName"
+                       type="text"
+                       placeholder="Enter your full name"
+                       value={signupFullName}
+                       onChange={(e) => setSignupFullName(e.target.value)}
+                       required
+                       maxLength={100}
+                     />
+                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="signupEmail">Email</Label>
                     <Input

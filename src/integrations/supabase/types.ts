@@ -204,6 +204,57 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limit_log: {
+        Row: {
+          action_type: string
+          created_at: string | null
+          id: string
+          identifier: string
+        }
+        Insert: {
+          action_type: string
+          created_at?: string | null
+          id?: string
+          identifier: string
+        }
+        Update: {
+          action_type?: string
+          created_at?: string | null
+          id?: string
+          identifier?: string
+        }
+        Relationships: []
+      }
+      security_audit_log: {
+        Row: {
+          created_at: string | null
+          event_details: Json | null
+          event_type: string
+          id: string
+          ip_address: unknown | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          event_details?: Json | null
+          event_type: string
+          id?: string
+          ip_address?: unknown | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          event_details?: Json | null
+          event_type?: string
+          id?: string
+          ip_address?: unknown | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       sessions: {
         Row: {
           created_at: string
@@ -323,6 +374,15 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      check_rate_limit: {
+        Args: {
+          _identifier: string
+          _action_type: string
+          _max_attempts?: number
+          _window_minutes?: number
+        }
+        Returns: boolean
+      }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: Database["public"]["Enums"]["app_role"]
@@ -333,6 +393,16 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
         }
         Returns: boolean
+      }
+      log_security_event: {
+        Args: {
+          _user_id: string
+          _event_type: string
+          _event_details?: Json
+          _ip_address?: unknown
+          _user_agent?: string
+        }
+        Returns: undefined
       }
     }
     Enums: {

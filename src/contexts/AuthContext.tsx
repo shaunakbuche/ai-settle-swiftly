@@ -89,6 +89,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
+      // Input validation
+      if (!email || !password || !fullName) {
+        const validationError = new Error('All fields are required');
+        toast({
+          title: "Sign Up Error",
+          description: validationError.message,
+          variant: "destructive",
+        });
+        return { error: validationError };
+      }
+      
+      if (fullName.length > 100) {
+        const validationError = new Error('Name must be less than 100 characters');
+        toast({
+          title: "Sign Up Error", 
+          description: validationError.message,
+          variant: "destructive",
+        });
+        return { error: validationError };
+      }
+
       const { error } = await supabase.auth.signUp({
         email,
         password,
@@ -126,6 +147,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signIn = async (email: string, password: string) => {
     try {
+      // Input validation
+      if (!email || !password) {
+        const validationError = new Error('Email and password are required');
+        toast({
+          title: "Sign In Error",
+          description: validationError.message,
+          variant: "destructive",
+        });
+        return { error: validationError };
+      }
+
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,

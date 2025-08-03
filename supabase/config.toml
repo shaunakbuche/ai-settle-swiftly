@@ -74,3 +74,6 @@ verify_jwt = true
 
 [functions.handle-docusign-webhook]
 verify_jwt = false
+
+[functions.secure-password-reset]
+verify_jwt = false

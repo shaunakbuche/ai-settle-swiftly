@@ -16,15 +16,17 @@ export const SecurityHeaders = () => {
     // Content Security Policy - Enhanced security
     addMetaTag('Content-Security-Policy', 
       "default-src 'self'; " +
-      "script-src 'self' https://js.stripe.com; " +
-      "style-src 'self' https://fonts.googleapis.com; " +
+      "script-src 'self' https://js.stripe.com 'unsafe-inline'; " +
+      "style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; " +
       "font-src 'self' https://fonts.gstatic.com; " +
-      "img-src 'self' data: https:; " +
+      "img-src 'self' data: https: blob:; " +
       "connect-src 'self' https://gffhkotvbwcsvchfieoa.supabase.co https://api.stripe.com; " +
       "frame-src https://js.stripe.com https://hooks.stripe.com; " +
       "object-src 'none'; " +
       "base-uri 'self'; " +
-      "form-action 'self';"
+      "form-action 'self'; " +
+      "upgrade-insecure-requests; " +
+      "block-all-mixed-content;"
     );
 
     // X-Frame-Options

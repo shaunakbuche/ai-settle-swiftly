@@ -13,6 +13,19 @@ export const useAnalytics = () => {
 
   const track = async (event: AnalyticsEvent) => {
     try {
+      // Input validation
+      if (!event.event_type || typeof event.event_type !== 'string') {
+        console.error('Analytics: Invalid event type');
+        return;
+      }
+
+      // Ensure valid event types for null user_id tracking
+      const allowedSystemEvents = ['page_view', 'system_event', 'error_tracking'];
+      if (!user?.id && !allowedSystemEvents.includes(event.event_type)) {
+        console.error('Analytics: Unauthorized event type for unauthenticated user');
+        return;
+      }
+
       const { error } = await supabase
         .from('analytics_events')
         .insert({
