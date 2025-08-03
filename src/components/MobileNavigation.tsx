@@ -15,7 +15,7 @@ const MobileNavigation = () => {
 
   const navigationItems = [
     { href: '/', label: 'Home', icon: Home },
-    ...(user ? [{ href: '/dashboard', label: 'Dashboard', icon: BarChart3 }] : []),
+    ...(user && isAdmin ? [{ href: '/dashboard', label: 'Dashboard', icon: BarChart3 }] : []),
     { href: '/pricing', label: 'Pricing', icon: DollarSign },
     { href: '/how-it-works', label: 'How It Works', icon: Info },
     { href: '/legal', label: 'Legal', icon: FileText },

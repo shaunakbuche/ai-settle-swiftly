@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Shield, Users, FileText, CheckCircle, Star, Zap, Brain, Cpu, Eye, Check, Clock, Bot, LogOut } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUserRole } from "@/hooks/useUserRole";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useEffect } from "react";
 import AIDiplomat from "@/components/AIDiplomat";
@@ -14,6 +15,7 @@ import logoShield from "@/assets/accordnow-logo-shield.png";
 
 const Index = () => {
   const { user, profile, signOut } = useAuth();
+  const { isAdmin } = useUserRole();
   const { track } = useAnalytics();
 
   useEffect(() => {
@@ -72,9 +74,11 @@ const Index = () => {
               </Link>
               {user ? (
                 <div className="flex items-center gap-4">
-                  <Link to="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">
-                    Dashboard
-                  </Link>
+                  {isAdmin && (
+                    <Link to="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">
+                      Dashboard
+                    </Link>
+                  )}
                   <span className="text-sm text-muted-foreground">
                     Welcome, {profile?.full_name || user.email}
                   </span>
@@ -118,11 +122,13 @@ const Index = () => {
               <div className="flex flex-col sm:flex-row gap-4">
                 {user ? (
                   <>
-                    <Link to="/dashboard">
-                      <Button variant="hero" size="lg" className="w-full sm:w-auto">
-                        View Dashboard
-                      </Button>
-                    </Link>
+                    {isAdmin && (
+                      <Link to="/dashboard">
+                        <Button variant="hero" size="lg" className="w-full sm:w-auto">
+                          View Dashboard
+                        </Button>
+                      </Link>
+                    )}
                     <Link to="/create-session">
                       <Button variant="outline" size="lg" className="w-full sm:w-auto">
                         Start New Dispute
