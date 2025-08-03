@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, Shield, Users, FileText, CheckCircle, Star, Zap, Brain, Cpu, Eye, Check, Clock, Bot, LogOut } from "lucide-react";
+import { ArrowRight, Shield, Users, FileText, CheckCircle, Star, Zap, Brain, Cpu, Eye, Check, Clock, Bot, LogOut, UserPlus } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -69,6 +69,9 @@ const Index = () => {
               <Link to="/pricing" className="text-muted-foreground hover:text-foreground transition-colors">
                 Pricing
               </Link>
+              <Link to="/join-session" className="text-muted-foreground hover:text-foreground transition-colors">
+                Join Dispute
+              </Link>
               <Link to="/legal" className="text-muted-foreground hover:text-foreground transition-colors">
                 Legal
               </Link>
@@ -134,13 +137,25 @@ const Index = () => {
                         Start New Dispute
                       </Button>
                     </Link>
+                    <Link to="/join-session">
+                      <Button variant="secondary" size="lg" className="w-full sm:w-auto">
+                        Join Dispute
+                      </Button>
+                    </Link>
                   </>
                 ) : (
-                  <Link to="/auth">
-                    <Button variant="hero" size="lg" className="w-full sm:w-auto">
-                      Get Started
-                    </Button>
-                  </Link>
+                  <>
+                    <Link to="/auth">
+                      <Button variant="hero" size="lg" className="w-full sm:w-auto">
+                        Get Started
+                      </Button>
+                    </Link>
+                    <Link to="/join-session">
+                      <Button variant="secondary" size="lg" className="w-full sm:w-auto">
+                        Join Dispute
+                      </Button>
+                    </Link>
+                  </>
                 )}
               </div>
 

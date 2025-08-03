@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu, Home, FileText, DollarSign, Info, User, BarChart3 } from 'lucide-react';
+import { Menu, Home, FileText, DollarSign, Info, User, BarChart3, UserPlus } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import logoShield from '@/assets/accordnow-logo-shield.png';
@@ -16,6 +16,7 @@ const MobileNavigation = () => {
   const navigationItems = [
     { href: '/', label: 'Home', icon: Home },
     ...(user && isAdmin ? [{ href: '/dashboard', label: 'Dashboard', icon: BarChart3 }] : []),
+    { href: '/join-session', label: 'Join Dispute', icon: UserPlus },
     { href: '/pricing', label: 'Pricing', icon: DollarSign },
     { href: '/how-it-works', label: 'How It Works', icon: Info },
     { href: '/legal', label: 'Legal', icon: FileText },
